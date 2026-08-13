@@ -1,73 +1,72 @@
-import type { ChangeEvent, DashboardData, Snapshot } from "./types";
+import type { DashboardData, Listing, OnboardEvent } from "./types";
 import { fetchAllListings, isDemo } from "./hostaway";
-import { getSnapshots, saveSnapshot } from "./store";
 
-function today(): string {
+function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Fetch the live roster and store it as today's snapshot (one per day). */
-export async function recordSnapshot(): Promise<Snapshot> {
-  const listings = await fetchAllListings();
-  const snap: Snapshot = {
-    date: today(),
-    count: listings.length,
-    listings: listings.map((l) => ({ id: l.id, name: l.name })),
-  };
-  await saveSnapshot(snap);
-  return snap;
+/** Add `days` to a YYYY-MM-DD string (UTC), returning YYYY-MM-DD. */
+function addDays(date: string, days: number): string {
+  const t = new Date(date + "T00:00:00Z").getTime() + days * 86400000;
+  return new Date(t).toISOString().slice(0, 10);
 }
 
-/** Diff consecutive snapshots into a flat, newest-first in/out feed. */
-function buildChanges(snaps: Snapshot[]): ChangeEvent[] {
-  const events: ChangeEvent[] = [];
-  for (let i = 1; i < snaps.length; i++) {
-    const prev = new Map(snaps[i - 1].listings.map((l) => [l.id, l.name]));
-    const curr = new Map(snaps[i].listings.map((l) => [l.id, l.name]));
-    for (const [id, name] of curr) {
-      if (!prev.has(id)) events.push({ date: snaps[i].date, type: "added", id, name });
-    }
-    for (const [id, name] of prev) {
-      if (!curr.has(id)) events.push({ date: snaps[i].date, type: "removed", id, name });
-    }
+/** Build a cumulative daily count series from first onboarding → today. */
+function buildHistory(dates: string[], today: string): Array<{ date: string; count: number }> {
+  if (dates.length === 0) return [{ date: today, count: 0 }];
+  const sorted = [...dates].sort();
+  const start = sorted[0];
+
+  // Count onboardings per day, then walk day-by-day accumulating.
+  const perDay = new Map<string, number>();
+  for (const d of sorted) perDay.set(d, (perDay.get(d) ?? 0) + 1);
+
+  const series: Array<{ date: string; count: number }> = [];
+  let running = 0;
+  let cursor = start;
+  // Guard against runaway loops (~5 years of days).
+  for (let i = 0; i < 2000 && cursor <= today; i++) {
+    running += perDay.get(cursor) ?? 0;
+    series.push({ date: cursor, count: running });
+    cursor = addDays(cursor, 1);
   }
-  return events.reverse();
+  // Ensure the final point is today with the full count.
+  if (series.length === 0 || series[series.length - 1].date !== today) {
+    series.push({ date: today, count: dates.length });
+  }
+  return series;
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  // Record today's snapshot opportunistically so history stays fresh
-  // even if the daily cron hasn't fired (e.g. first visit of the day).
-  try {
-    await recordSnapshot();
-  } catch (err) {
-    // If recording fails, still render from whatever history we have.
-    console.error("recordSnapshot failed:", err);
-  }
+  const listings: Listing[] = await fetchAllListings();
+  const today = todayStr();
+  const month = today.slice(0, 7);
 
-  const snaps = await getSnapshots();
-  const liveListings = await fetchAllListings().catch(() => {
-    const last = snaps[snaps.length - 1];
-    return (last?.listings ?? []).map((l) => ({ id: l.id, name: l.name }));
-  });
+  // Previous calendar month (e.g. today 2026-08 → "2026-07").
+  const prevMonthDate = addDays(month + "-01", -1);
+  const prevMonth = prevMonthDate.slice(0, 7);
+  const thirtyDaysAgo = addDays(today, -30);
 
-  const history = snaps.map((s) => ({ date: s.date, count: s.count }));
-  const changes = buildChanges(snaps);
+  const dated = listings.filter((l) => l.onboardedAt);
+  const dates = dated.map((l) => l.onboardedAt);
 
-  const first = snaps[0];
-  const last = snaps[snaps.length - 1];
-  const added = changes.filter((c) => c.type === "added").length;
-  const removed = changes.filter((c) => c.type === "removed").length;
+  const onboardings: OnboardEvent[] = [...dated]
+    .sort((a, b) => b.onboardedAt.localeCompare(a.onboardedAt))
+    .map((l) => ({ date: l.onboardedAt, id: l.id, name: l.name, city: l.city }));
+
+  const stats = {
+    total: listings.length,
+    thisMonth: dates.filter((d) => d.startsWith(month)).length,
+    prevMonth: dates.filter((d) => d.startsWith(prevMonth)).length,
+    last30: dates.filter((d) => d >= thirtyDaysAgo).length,
+    sinceFirst: dates.length ? [...dates].sort()[0] : null,
+  };
 
   return {
-    current: { count: liveListings.length, listings: liveListings },
-    history,
-    changes,
-    net: {
-      added,
-      removed,
-      net: last && first ? last.count - first.count : 0,
-      since: first?.date ?? null,
-    },
+    current: { count: listings.length, listings },
+    history: buildHistory(dates, today),
+    onboardings,
+    stats,
     demo: isDemo(),
     generatedAt: new Date().toISOString(),
   };

@@ -202,10 +202,16 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.feed-city {
+  color: var(--muted);
+  font-weight: 400;
+}
+
 .feed-date {
   color: var(--muted);
   font-size: 12px;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .empty {

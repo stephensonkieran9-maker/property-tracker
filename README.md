@@ -1,78 +1,53 @@
 # Property Tracker
 
-A dashboard that shows **how many properties you have onboarded in Hostaway**, your **net growth over time**, and a live feed of **properties coming in and going out** — great for tracking progress toward an onboarding bonus.
+A dashboard that shows **how many properties you have onboarded in Hostaway** and **how many you've brought on over time** — great for tracking progress toward an onboarding bonus.
 
-It pulls the live count from the Hostaway API and records one snapshot per day, so it can show trends and in/out changes that the Hostaway API alone can't.
-
-![stack: Next.js + Vercel KV + Vercel Cron](https://img.shields.io/badge/Next.js-Vercel-black)
-
----
+Everything is derived live from the Hostaway API using each listing's `insertedOn` (onboarding) date, so there's **no database and nothing to pay for** — it shows your real history going back to your first listing.
 
 ## What it shows
 
 - **Properties now** — live count from Hostaway
-- **Net change** — growth since tracking began
-- **Brought on / Off-boarded** — running totals of adds and removals
-- **Count over time** — daily line chart
-- **In & out feed** — every property that was added or removed, with the date
+- **Brought on this month / last 30 days / previous month** — onboarding momentum
+- **Portfolio growth** — real cumulative property count over time
+- **Properties brought on** — every property with the date it was onboarded, newest first
 
----
-
-## Run it locally (demo mode, no key needed)
+## Run it locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 — it starts in **DEMO DATA** mode with realistic sample data so you can see the layout before wiring your key.
+Open http://localhost:3000. With no key it runs in **DEMO DATA** mode. For real data, create `.env.local`:
 
----
+```
+HOSTAWAY_ACCOUNT_ID=your_account_id
+HOSTAWAY_API_KEY=your_api_key
+```
+
+(Account ID = Hostaway `client_id`, API key = `client_secret`, from Hostaway → Settings → Hostaway API.)
 
 ## Deploy to Vercel
 
-1. **Push this folder to a Git repo** (GitHub/GitLab/Bitbucket) and import it at [vercel.com/new](https://vercel.com/new). Framework preset: **Next.js** (auto-detected).
-
-2. **Add a KV store for snapshot history:**
-   Project → **Storage** → **Create Database** → **KV** (Upstash Redis) → connect it to the project.
-   Vercel auto-injects `KV_REST_API_URL` and `KV_REST_API_TOKEN`.
-
-3. **Add your Hostaway credentials** under Project → **Settings → Environment Variables**:
-
-   | Variable | Value |
-   |---|---|
-   | `HOSTAWAY_ACCOUNT_ID` | your Hostaway Account ID (the API `client_id`) |
-   | `HOSTAWAY_API_KEY` | your Hostaway API key (the `client_secret`) |
-   | `CRON_SECRET` | any long random string |
-
-   Get the Hostaway values from **Hostaway → Settings → Hostaway API**.
-
-4. **Redeploy.** The daily cron (`vercel.json`, 06:00 UTC) records a snapshot automatically. The dashboard also records one on first visit each day, so history stays fresh even without the cron.
-
-> Leaving `HOSTAWAY_*` blank keeps it in demo mode. Set `DEMO_MODE=1` to force demo data even with a key present.
-
----
+1. Import the repo at [vercel.com/new](https://vercel.com/new) (Next.js is auto-detected).
+2. Add two environment variables under **Settings → Environment Variables**:
+   - `HOSTAWAY_ACCOUNT_ID`
+   - `HOSTAWAY_API_KEY`
+3. Deploy. That's it — no database, no cron, no storage add-ons.
 
 ## How it works
 
 | Piece | File |
 |---|---|
-| Hostaway auth + listing fetch (paginated) | `lib/hostaway.ts` |
-| Snapshot storage (Vercel KV, local file fallback) | `lib/store.ts` |
-| Trend + in/out diffing | `lib/dashboard.ts` |
-| Daily cron endpoint | `app/api/snapshot/route.ts` |
+| Hostaway auth + listing fetch (paginated, with `insertedOn`) | `lib/hostaway.ts` |
+| Deriving growth history + onboarding stats | `lib/dashboard.ts` |
 | Dashboard data API | `app/api/data/route.ts` |
 | UI | `app/components/Dashboard.tsx`, `LineChart.tsx` |
 
-Snapshots are stored as one record per day: `{ date, count, listings: [{id, name}] }`.
-"In / out" is computed by diffing each day against the day before, so removed
-properties keep their names in the feed.
+### Note on properties *removed*
 
----
-
-## Notes
-
-- The local file store (`.data/snapshots.json`) is for local dev only — Vercel's
-  filesystem is ephemeral, which is why production uses KV.
-- Hostaway access tokens are long-lived and cached in memory per instance.
-- Cron runs on Vercel's schedule; adjust the time in `vercel.json`.
+Hostaway's API only returns current listings, so a property that's been
+deleted no longer appears — the API can't tell you historically what was
+taken *out*. This tracker therefore focuses on what you've brought *on*
+(which is what the bonus is based on). If you later want removal tracking,
+it can be added for free by committing a daily snapshot file to this repo.

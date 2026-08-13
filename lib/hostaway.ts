@@ -56,12 +56,13 @@ interface HostawayListing {
   id: number;
   name?: string;
   internalListingName?: string;
-  address?: string;
+  externalListingName?: string;
   city?: string;
-  status?: string;
+  /** e.g. "2025-05-15 14:04:53" */
+  insertedOn?: string;
 }
 
-/** Fetch the full active property roster, following pagination. */
+/** Fetch the full property roster, following pagination. */
 export async function fetchAllListings(): Promise<Listing[]> {
   if (isDemo()) return mockListings();
 
@@ -91,10 +92,9 @@ export async function fetchAllListings(): Promise<Listing[]> {
     for (const l of batch) {
       out.push({
         id: l.id,
-        name: l.name || l.internalListingName || `Listing ${l.id}`,
-        address: l.address,
+        name: l.name || l.externalListingName || l.internalListingName || `Listing ${l.id}`,
         city: l.city,
-        status: l.status,
+        onboardedAt: (l.insertedOn ?? "").slice(0, 10),
       });
     }
 

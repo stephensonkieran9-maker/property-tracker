@@ -4,6 +4,25 @@ import { useEffect, useState, useCallback } from "react";
 import type { DashboardData } from "@/lib/types";
 import LineChart from "./LineChart";
 
+function monthName(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function prettyDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,17 +47,12 @@ export default function Dashboard() {
     load();
   }, [load]);
 
-  if (loading && !data) {
-    return <div className="loading">Loading property data…</div>;
-  }
-  if (error && !data) {
-    return <div className="error">Couldn’t load data: {error}</div>;
-  }
+  if (loading && !data) return <div className="loading">Loading property data…</div>;
+  if (error && !data) return <div className="error">Couldn’t load data: {error}</div>;
   if (!data) return null;
 
-  const { current, history, changes, net } = data;
-  const netClass = net.net > 0 ? "pos" : net.net < 0 ? "neg" : "";
-  const netSign = net.net > 0 ? "+" : "";
+  const { current, history, onboardings, stats } = data;
+  const thisMonthLabel = stats.sinceFirst ? monthName(new Date().toISOString().slice(0, 7)) : "";
 
   return (
     <>
@@ -49,7 +63,7 @@ export default function Dashboard() {
             {data.demo && <span className="demo-badge">DEMO DATA</span>}
           </h1>
           <p className="subtitle">
-            Live count from Hostaway · net growth &amp; in/out over time
+            Live from Hostaway · portfolio size &amp; properties brought on over time
           </p>
         </div>
         <button className="btn" onClick={load} disabled={loading}>
@@ -64,49 +78,45 @@ export default function Dashboard() {
           <div className="stat-sub">live from Hostaway</div>
         </div>
         <div className="card">
-          <p className="stat-label">Net change</p>
-          <div className={`stat-value ${netClass}`}>
-            {netSign}
-            {net.net}
-          </div>
-          <div className="stat-sub">
-            {net.since ? `since ${net.since}` : "no history yet"}
-          </div>
+          <p className="stat-label">Brought on this month</p>
+          <div className="stat-value pos">+{stats.thisMonth}</div>
+          <div className="stat-sub">{thisMonthLabel}</div>
         </div>
         <div className="card">
-          <p className="stat-label">Brought on</p>
-          <div className="stat-value small pos">+{net.added}</div>
-          <div className="stat-sub">properties added</div>
+          <p className="stat-label">Last 30 days</p>
+          <div className="stat-value small pos">+{stats.last30}</div>
+          <div className="stat-sub">rolling</div>
         </div>
         <div className="card">
-          <p className="stat-label">Off-boarded</p>
-          <div className="stat-value small neg">-{net.removed}</div>
-          <div className="stat-sub">properties removed</div>
+          <p className="stat-label">Previous month</p>
+          <div className="stat-value small">+{stats.prevMonth}</div>
+          <div className="stat-sub">for comparison</div>
         </div>
       </div>
 
       <div className="section">
-        <h2>Property count over time</h2>
-        <p className="hint">One data point per day. Trending up is the goal.</p>
+        <h2>Portfolio growth</h2>
+        <p className="hint">
+          Total properties over time{stats.sinceFirst ? `, since ${prettyDate(stats.sinceFirst)}` : ""}.
+        </p>
         <LineChart data={history} />
       </div>
 
       <div className="section">
-        <h2>Properties in &amp; out</h2>
-        <p className="hint">Every add and removal we&apos;ve detected, newest first.</p>
+        <h2>Properties brought on</h2>
+        <p className="hint">Every property and the date it was onboarded in Hostaway, newest first.</p>
         <div className="feed">
-          {changes.length === 0 && (
-            <div className="empty">
-              No changes recorded yet. Once the roster shifts, moves show up here.
-            </div>
+          {onboardings.length === 0 && (
+            <div className="empty">No onboarding dates found on your listings.</div>
           )}
-          {changes.map((c, i) => (
-            <div className="feed-row" key={`${c.date}-${c.type}-${c.id}-${i}`}>
-              <span className={`pill ${c.type === "added" ? "in" : "out"}`}>
-                {c.type === "added" ? "IN" : "OUT"}
+          {onboardings.map((o) => (
+            <div className="feed-row" key={o.id}>
+              <span className="pill in">IN</span>
+              <span className="feed-name">
+                {o.name}
+                {o.city ? <span className="feed-city"> · {o.city}</span> : null}
               </span>
-              <span className="feed-name">{c.name}</span>
-              <span className="feed-date">{c.date}</span>
+              <span className="feed-date">{prettyDate(o.date)}</span>
             </div>
           ))}
         </div>
