@@ -87,6 +87,37 @@ body {
   cursor: default;
 }
 
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 5px;
+  width: fit-content;
+}
+
+.tab {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-radius: 7px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.tab:hover {
+  color: var(--text);
+}
+.tab.active {
+  background: var(--panel-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -234,4 +265,104 @@ body {
 .chart-wrap {
   width: 100%;
   overflow-x: auto;
+}
+
+/* ── Monthly breakdown ─────────────────────────────────────── */
+.months {
+  display: flex;
+  flex-direction: column;
+}
+
+.month {
+  border-bottom: 1px solid rgba(34, 48, 73, 0.5);
+}
+.month:last-child {
+  border-bottom: none;
+}
+
+.month-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 12px 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  border-radius: 8px;
+  transition: background 0.12s;
+}
+.month-row:hover {
+  background: var(--panel-2);
+}
+
+.month-caret {
+  color: var(--muted);
+  font-size: 11px;
+  width: 12px;
+  flex-shrink: 0;
+}
+
+.month-name {
+  font-weight: 600;
+  width: 130px;
+  flex-shrink: 0;
+}
+
+.month-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--panel-2);
+  border-radius: 999px;
+  overflow: hidden;
+  min-width: 60px;
+}
+.month-bar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #3d7fd6, var(--accent));
+  border-radius: 999px;
+}
+
+.month-count {
+  color: var(--green);
+  font-weight: 700;
+  width: 42px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.month-total {
+  color: var(--muted);
+  font-size: 12px;
+  width: 68px;
+  text-align: right;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.month-items {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 6px 14px 32px;
+}
+.month-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+@media (max-width: 640px) {
+  .month-total {
+    display: none;
+  }
+  .month-name {
+    width: 96px;
+    font-size: 13px;
+  }
 }

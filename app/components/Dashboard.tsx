@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import type { DashboardData } from "@/lib/types";
 import LineChart from "./LineChart";
+import MonthlyView from "./MonthlyView";
 
 function monthName(ym: string): string {
   const [y, m] = ym.split("-").map(Number);
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"overview" | "months">("overview");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +73,25 @@ export default function Dashboard() {
         </button>
       </div>
 
+      <div className="tabs">
+        <button
+          className={`tab ${tab === "overview" ? "active" : ""}`}
+          onClick={() => setTab("overview")}
+        >
+          Overview
+        </button>
+        <button
+          className={`tab ${tab === "months" ? "active" : ""}`}
+          onClick={() => setTab("months")}
+        >
+          By month
+        </button>
+      </div>
+
+      {tab === "months" ? (
+        <MonthlyView onboardings={onboardings} />
+      ) : (
+      <>
       <div className="grid">
         <div className="card">
           <p className="stat-label">Properties now</p>
@@ -121,6 +142,8 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+      </>
+      )}
     </>
   );
 }
