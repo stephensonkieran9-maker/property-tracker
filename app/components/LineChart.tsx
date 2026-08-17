@@ -57,8 +57,8 @@ export default function LineChart({ data }: { data: Point[] }) {
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Property count over time">
         <defs>
           <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#4f9dff" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#4f9dff" stopOpacity="0" />
+            <stop offset="0%" stopColor="#24c083" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="#24c083" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -69,20 +69,20 @@ export default function LineChart({ data }: { data: Point[] }) {
               x2={W - pad.right}
               y1={y(t)}
               y2={y(t)}
-              stroke="#223049"
+              stroke="var(--border-soft)"
               strokeWidth="1"
             />
-            <text x={pad.left - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#8b9bb4">
+            <text x={pad.left - 8} y={y(t) + 4} textAnchor="end" fontSize="11" fill="var(--muted)">
               {t}
             </text>
           </g>
         ))}
 
         <path d={areaPath} fill="url(#areaFill)" />
-        <path d={linePath} fill="none" stroke="#4f9dff" strokeWidth="2.5" strokeLinejoin="round" />
+        <path d={linePath} fill="none" stroke="#16a56f" strokeWidth="2.5" strokeLinejoin="round" />
 
         {/* Last-point marker */}
-        <circle cx={x(data.length - 1)} cy={y(data[data.length - 1].count)} r="4" fill="#4f9dff" />
+        <circle cx={x(data.length - 1)} cy={y(data[data.length - 1].count)} r="4" fill="#16a56f" />
 
         {labelIdx.map((i) => (
           <text
@@ -91,7 +91,7 @@ export default function LineChart({ data }: { data: Point[] }) {
             y={H - 10}
             textAnchor="middle"
             fontSize="11"
-            fill="#8b9bb4"
+            fill="var(--muted)"
           >
             {fmt(data[i].date)}
           </text>

@@ -63,9 +63,8 @@ export default function MonthlyView({ onboardings }: { onboardings: OnboardEvent
   }
 
   return (
-    <div className="section">
-      <h2>Brought on by month</h2>
-      <p className="hint">
+    <div className="card">
+      <p className="hint" style={{ marginTop: 0 }}>
         {months.length} months tracked · best month was {monthLabel(best.key)} with +{best.count}.
         Click a month to see which properties.
       </p>
