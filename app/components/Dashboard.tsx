@@ -43,6 +43,16 @@ const IconRefresh = () => (
     <path d="M21 12a9 9 0 0 1-15 6.7L3 16" /><path d="M3 21v-5h5" />
   </svg>
 );
+const IconTrendDown = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 7l6 6 4-4 8 8" /><path d="M17 17h4v-4" />
+  </svg>
+);
+const IconNet = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3" />
+  </svg>
+);
 
 function currentMonthName(): string {
   const now = new Date();
@@ -140,7 +150,7 @@ export default function Dashboard() {
 }
 
 function Content({ data, tab }: { data: DashboardData; tab: "overview" | "months" }) {
-  const { current, history, onboardings, stats } = data;
+  const { current, history, onboardings, losses, stats } = data;
 
   return (
     <>
@@ -167,7 +177,7 @@ function Content({ data, tab }: { data: DashboardData; tab: "overview" | "months
             <div className="kpi">
               <div className="kpi-top">
                 <span className="kpi-icon"><IconBuilding /></span>
-                {stats.thisMonth > 0 && <span className="kpi-badge pos">+{stats.thisMonth} this month</span>}
+                <span className="kpi-badge">{currentMonthName()}</span>
               </div>
               <div className="kpi-label">Total properties</div>
               <div className="kpi-value">{current.count}</div>
@@ -176,28 +186,30 @@ function Content({ data, tab }: { data: DashboardData; tab: "overview" | "months
             <div className="kpi">
               <div className="kpi-top">
                 <span className="kpi-icon"><IconTrend /></span>
-                <span className="kpi-badge">{currentMonthName()}</span>
+                <span className="kpi-badge pos">brought on</span>
               </div>
-              <div className="kpi-label">Brought on this month</div>
-              <div className="kpi-value">+{stats.thisMonth}</div>
+              <div className="kpi-label">Gained this month</div>
+              <div className="kpi-value pos">+{stats.thisMonth}</div>
             </div>
 
             <div className="kpi">
               <div className="kpi-top">
-                <span className="kpi-icon"><IconClock /></span>
-                <span className="kpi-badge">rolling</span>
+                <span className="kpi-icon"><IconTrendDown /></span>
+                <span className="kpi-badge neg">off-boarded</span>
               </div>
-              <div className="kpi-label">Last 30 days</div>
-              <div className="kpi-value">+{stats.last30}</div>
+              <div className="kpi-label">Lost this month</div>
+              <div className="kpi-value neg">−{stats.lostThisMonth}</div>
             </div>
 
             <div className="kpi">
               <div className="kpi-top">
-                <span className="kpi-icon"><IconHistory /></span>
-                <span className="kpi-badge">previous</span>
+                <span className="kpi-icon"><IconNet /></span>
+                <span className={`kpi-badge ${stats.netThisMonth >= 0 ? "pos" : "neg"}`}>net</span>
               </div>
-              <div className="kpi-label">Previous month</div>
-              <div className="kpi-value">+{stats.prevMonth}</div>
+              <div className="kpi-label">Net this month</div>
+              <div className={`kpi-value ${stats.netThisMonth >= 0 ? "pos" : "neg"}`}>
+                {stats.netThisMonth >= 0 ? "+" : "−"}{Math.abs(stats.netThisMonth)}
+              </div>
             </div>
           </div>
 
@@ -226,6 +238,35 @@ function Content({ data, tab }: { data: DashboardData; tab: "overview" | "months
                   <span className="feed-date">{prettyDate(o.date)}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>Properties lost</h2>
+            <p className="hint">
+              {stats.trackingSince
+                ? `Properties removed from Hostaway, tracked since ${prettyDate(stats.trackingSince)}.`
+                : "Loss-tracking starts once the Blob store is connected in Vercel."}
+            </p>
+            <div className="feed">
+              {losses.length === 0 ? (
+                <div className="empty">
+                  {stats.trackingSince
+                    ? "No properties lost since tracking began. 🎉"
+                    : "Add a Vercel Blob store and redeploy to start tracking losses."}
+                </div>
+              ) : (
+                losses.map((o) => (
+                  <div className="feed-row" key={`${o.id}-${o.date}`}>
+                    <span className="pill out">OUT</span>
+                    <span className="feed-name">
+                      {o.name}
+                      {o.city ? <span className="feed-city"> · {o.city}</span> : null}
+                    </span>
+                    <span className="feed-date">{prettyDate(o.date)}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </>

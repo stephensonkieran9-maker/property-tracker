@@ -23,6 +23,13 @@ const MONTHLY: Array<[string, number]> = [
   ["2026-06", 2], ["2026-07", 1], ["2026-08", 1],
 ];
 
+export function mockLosses() {
+  return [
+    { date: "2026-07-19", id: 1007, name: "Riverside Cottage", city: "Miami" },
+    { date: "2026-05-02", id: 1004, name: "Maple Street Bungalow", city: "Nashville" },
+  ];
+}
+
 export function mockListings(): Listing[] {
   const out: Listing[] = [];
   let i = 0;

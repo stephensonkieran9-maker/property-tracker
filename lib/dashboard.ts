@@ -1,5 +1,7 @@
 import type { DashboardData, Listing, OnboardEvent } from "./types";
 import { fetchAllListings, isDemo } from "./hostaway";
+import { recordAndDiffLosses } from "./store";
+import { mockLosses } from "./mock";
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
@@ -54,18 +56,35 @@ export async function getDashboardData(): Promise<DashboardData> {
     .sort((a, b) => b.onboardedAt.localeCompare(a.onboardedAt))
     .map((l) => ({ date: l.onboardedAt, id: l.id, name: l.name, city: l.city }));
 
+  // Diff the live roster against the last snapshot to detect losses.
+  // Never let a store hiccup break the dashboard.
+  const { losses, trackingSince } = isDemo()
+    ? { losses: mockLosses(), trackingSince: "2025-06-01" }
+    : await recordAndDiffLosses(listings, today).catch(() => ({
+        losses: [] as Awaited<ReturnType<typeof recordAndDiffLosses>>["losses"],
+        trackingSince: null as string | null,
+      }));
+
+  const thisMonth = dates.filter((d) => d.startsWith(month)).length;
+  const lostThisMonth = losses.filter((l) => l.date.startsWith(month)).length;
+
   const stats = {
     total: listings.length,
-    thisMonth: dates.filter((d) => d.startsWith(month)).length,
+    thisMonth,
     prevMonth: dates.filter((d) => d.startsWith(prevMonth)).length,
     last30: dates.filter((d) => d >= thirtyDaysAgo).length,
     sinceFirst: dates.length ? [...dates].sort()[0] : null,
+    lostThisMonth,
+    lostTotal: losses.length,
+    netThisMonth: thisMonth - lostThisMonth,
+    trackingSince,
   };
 
   return {
     current: { count: listings.length, listings },
     history: buildHistory(dates, today),
     onboardings,
+    losses,
     stats,
     demo: isDemo(),
     generatedAt: new Date().toISOString(),

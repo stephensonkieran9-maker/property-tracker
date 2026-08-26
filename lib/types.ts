@@ -14,6 +14,15 @@ export interface OnboardEvent {
   city?: string;
 }
 
+/** A property that disappeared from Hostaway (detected by snapshot diff). */
+export interface LossEvent {
+  /** Date we first noticed it was gone (YYYY-MM-DD). */
+  date: string;
+  id: number;
+  name: string;
+  city?: string;
+}
+
 export interface DashboardData {
   current: {
     count: number;
@@ -23,6 +32,8 @@ export interface DashboardData {
   history: Array<{ date: string; count: number }>;
   /** Onboardings, newest first. */
   onboardings: OnboardEvent[];
+  /** Losses detected via snapshot diff, newest first (empty until tracking is on). */
+  losses: LossEvent[];
   stats: {
     total: number;
     thisMonth: number;
@@ -30,6 +41,14 @@ export interface DashboardData {
     last30: number;
     /** Date of the first onboarding we can see (YYYY-MM-DD). */
     sinceFirst: string | null;
+    /** Properties lost this calendar month. */
+    lostThisMonth: number;
+    /** Total losses recorded since tracking began. */
+    lostTotal: number;
+    /** Net change this month (brought on − lost). */
+    netThisMonth: number;
+    /** Date loss-tracking started (null if not tracking yet). */
+    trackingSince: string | null;
   };
   demo: boolean;
   generatedAt: string;

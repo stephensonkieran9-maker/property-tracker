@@ -33,7 +33,13 @@ HOSTAWAY_API_KEY=your_api_key
 2. Add two environment variables under **Settings → Environment Variables**:
    - `HOSTAWAY_ACCOUNT_ID`
    - `HOSTAWAY_API_KEY`
-3. Deploy. That's it — no database, no cron, no storage add-ons.
+3. **(For loss-tracking)** Add a **Blob** store: Storage → Create Database → **Blob** →
+   connect it. Vercel injects `BLOB_READ_WRITE_TOKEN` automatically. This lets the
+   app save a daily roster snapshot so it can detect removed properties. Free tier.
+4. Redeploy. The daily cron (`vercel.json`, 07:00 UTC) records a snapshot each day.
+
+> Gained/growth work with no store at all. The Blob store is only needed for the
+> **Properties lost** feature — without it, losses simply stay empty.
 
 ## How it works
 
