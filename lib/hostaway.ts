@@ -1,7 +1,7 @@
 import type { Listing } from "./types";
 import { mockListings } from "./mock";
 
-const BASE = "https://api.hostaway.com/v1";
+export const BASE = "https://api.hostaway.com/v1";
 
 export function isDemo(): boolean {
   if (process.env.DEMO_MODE === "1") return true;
@@ -17,7 +17,7 @@ interface TokenResponse {
 // Access tokens are long-lived; cache within the serverless instance.
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
-async function getToken(): Promise<string> {
+export async function getToken(): Promise<string> {
   if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
     return cachedToken.token;
   }

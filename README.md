@@ -1,59 +1,45 @@
-# Property Tracker
+# Keapr Board
 
-A dashboard that shows **how many properties you have onboarded in Hostaway** and **how many you've brought on over time** — great for tracking progress toward an onboarding bonus.
+The Keapr operating board: occupancy, guest problems pulled from the inbox, bookings and
+revenue (today, any month, running total) and team targets — live from Hostaway.
+Built on the earlier **property-tracker** (property counts + losses), which now lives at `/growth`.
 
-Everything is derived live from the Hostaway API using each listing's `insertedOn` (onboarding) date, so there's **no database and nothing to pay for** — it shows your real history going back to your first listing.
+## What's on the board (`/`)
 
-## What it shows
+| Section | Where the numbers come from |
+|---|---|
+| Occupancy tonight, vs same night last week | Confirmed reservations covering tonight ÷ properties |
+| Booked today / last 24h | Reservations by booking date (`reservationDate`), cancellations by `cancellationDate` |
+| Arriving / leaving today | Reservation arrival / departure dates |
+| Unanswered, oldest waiting | Conversations where the guest's last message is newer than ours |
+| Needs you + hero card | Latest guest message checked for access, maintenance, refund, complaint, noise, WiFi, cancellation keywords (`lib/board.ts` → `RULES`); anything unanswered > 4h is flagged too |
+| Bookings & revenue (month picker) | Bookings made in the month, revenue booked, running total for the year, month occupancy, stay revenue & ADR, daily running-total chart vs target pace |
+| Next 14 nights heatmap / Tonight by area | Occupancy per area (Hostaway listing `city`) |
+| Team targets — people | Google Sheet via `TARGETS_SHEET_CSV_URL` (pulled once a day, `lib/sheets.ts`). Columns: Person, Target, Actual, optional Month / Unit / Team. Until connected: Gelo £20k, Darwin £5k, Christine £10k a month. |
+| Team targets — company | `lib/targets.ts` (Hostaway metrics). Always company-wide. |
+| Portfolio strip | Properties now, onboarded and lost this month (lost = daily snapshot diff) |
 
-- **Properties now** — live count from Hostaway
-- **Brought on this month / last 30 days / previous month** — onboarding momentum
-- **Portfolio growth** — real cumulative property count over time
-- **Properties brought on** — every property with the date it was onboarded, newest first
+Area pills filter everything except team targets.
 
-## Run it locally
-
+## Run locally
 ```bash
 npm install
-npm run dev
+npm run dev       # http://localhost:3000 — DEMO DATA with no keys
 ```
+`.env.local` for real data: `HOSTAWAY_ACCOUNT_ID`, `HOSTAWAY_API_KEY`, optional `GREETING_NAME`.
 
-Open http://localhost:3000. With no key it runs in **DEMO DATA** mode. For real data, create `.env.local`:
+## Deploy (Vercel)
+Same as property-tracker: add the Hostaway env vars, add a Blob store (for loss tracking),
+the daily cron in `vercel.json` snapshots the roster at 07:00 UTC.
 
-```
-HOSTAWAY_ACCOUNT_ID=your_account_id
-HOSTAWAY_API_KEY=your_api_key
-```
+## Code map
+- `lib/hostaway.ts` — auth + listings (from property-tracker)
+- `lib/hostawayBoard.ts` — reservations + conversations/messages
+- `lib/board.ts` — all board maths (shared by real and demo data)
+- `lib/mockBoard.ts` — demo data
+- `lib/targets.ts` — team targets
+- `app/components/Board.tsx`, `app/board.css` — UI
+- `app/api/board` — `GET /api/board?month=YYYY-MM&group=<area>`
 
-(Account ID = Hostaway `client_id`, API key = `client_secret`, from Hostaway → Settings → Hostaway API.)
-
-## Deploy to Vercel
-
-1. Import the repo at [vercel.com/new](https://vercel.com/new) (Next.js is auto-detected).
-2. Add two environment variables under **Settings → Environment Variables**:
-   - `HOSTAWAY_ACCOUNT_ID`
-   - `HOSTAWAY_API_KEY`
-3. **(For loss-tracking)** Add a **Blob** store: Storage → Create Database → **Blob** →
-   connect it. Vercel injects `BLOB_READ_WRITE_TOKEN` automatically. This lets the
-   app save a daily roster snapshot so it can detect removed properties. Free tier.
-4. Redeploy. The daily cron (`vercel.json`, 07:00 UTC) records a snapshot each day.
-
-> Gained/growth work with no store at all. The Blob store is only needed for the
-> **Properties lost** feature — without it, losses simply stay empty.
-
-## How it works
-
-| Piece | File |
-|---|---|
-| Hostaway auth + listing fetch (paginated, with `insertedOn`) | `lib/hostaway.ts` |
-| Deriving growth history + onboarding stats | `lib/dashboard.ts` |
-| Dashboard data API | `app/api/data/route.ts` |
-| UI | `app/components/Dashboard.tsx`, `LineChart.tsx` |
-
-### Note on properties *removed*
-
-Hostaway's API only returns current listings, so a property that's been
-deleted no longer appears — the API can't tell you historically what was
-taken *out*. This tracker therefore focuses on what you've brought *on*
-(which is what the bonus is based on). If you later want removal tracking,
-it can be added for free by committing a daily snapshot file to this repo.
+## Next
+Click-through detail pages (each tile / target / problem), reply time, AI summaries of inbox problems.
