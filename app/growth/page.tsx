@@ -1,5 +1,5 @@
-import Dashboard from "../components/Dashboard";
+import Growth from "../components/Growth";
 
-export default function Growth() {
-  return <Dashboard />;
+export default function GrowthPage() {
+  return <Growth />;
 }

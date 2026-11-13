@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Sidebar from "./Sidebar";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
 // ── Formatting ──────────────────────────────────────────────
@@ -99,13 +100,7 @@ export default function Board() {
 
   return (
     <div className="kb">
-      <aside className="kb-side">
-        <div className="kb-logo">K</div>
-        <a className="kb-nav active" href="/">{I.grid}Overview</a>
-        <span className="kb-nav" aria-disabled="true" title="Coming next">{I.inbox}Inbox</span>
-        <span className="kb-nav" aria-disabled="true" title="Coming next">{I.target}Targets</span>
-        <a className="kb-nav" href="/growth">{I.growth}Growth</a>
-      </aside>
+      <Sidebar active="overview" />
 
       <main className="kb-main">
         {!data && !error && <div className="kb-loading">Loading the board…</div>}

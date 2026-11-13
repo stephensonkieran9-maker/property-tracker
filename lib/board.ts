@@ -52,6 +52,18 @@ const RULES: Array<{ kind: ProblemKind; severity: 1 | 2 | 3; words: RegExp }> = 
   { kind: "WiFi", severity: 1, words: /wi-?fi|internet/i },
 ];
 
+// Short sign-offs ("Thanks for your hosting", "Super! Merci!", "👍") don't need a reply.
+const ACK = /\b(thanks?|thank ?you|thx|ty|cheers|merci|danke|gracias|grazie|obrigad[oa]|dank(je|e)|super|great|perfect|lovely|brilliant|awesome|amazing|wonderful|fantastic|excellent|ok(ay)?|noted|will do|sounds good|all good|no worries|appreciated?|bye|goodbye|have a (good|great|nice))\b|[👍🙏❤️😊🙂👌✅]/iu;
+export function isAck(text: string): boolean {
+  const t = text.trim();
+  if (!t) return false;
+  if (t.length > 120 || t.includes("?")) return false;
+  // Questions without a question mark ("Thanks! What time is checkout").
+  if (/\b(what|when|where|which|how|can|could|is there|are there|do you|does|will you|would you|please|need|help)\b/i.test(t)) return false;
+  if (classify(t)) return false; // anything that reads like a problem still counts
+  return ACK.test(t);
+}
+
 function classify(text: string): { kind: ProblemKind; severity: 1 | 2 | 3 } | null {
   for (const r of RULES) if (r.words.test(text)) return { kind: r.kind, severity: r.severity };
   return null;
@@ -122,12 +134,14 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
   const booked24 = confirmed.filter((r) => r.bookedOn >= since24);
 
   // ── Inbox
-  const waiting = convs.filter((c) => c.lastIncomingAt && (!c.lastOutgoingAt || c.lastOutgoingAt < c.lastIncomingAt));
+  const needsReply = (c: Conversation) =>
+    !!c.lastIncomingAt && (!c.lastOutgoingAt || c.lastOutgoingAt < c.lastIncomingAt) && !isAck(c.lastMessage);
+  const waiting = convs.filter(needsReply);
   const oldest = waiting.map((c) => c.lastIncomingAt!).sort()[0] ?? null;
   const problems: Problem[] = [];
   for (const c of convs) {
     if (!c.lastIncomingAt) continue;
-    const unanswered = !c.lastOutgoingAt || c.lastOutgoingAt < c.lastIncomingAt;
+    const unanswered = needsReply(c);
     const hit = classify(c.lastMessage);
     const waitingMins = minutesBetween(c.lastIncomingAt, nowStamp);
     // Flag anything that reads like a problem in the last 3 days, plus anything left > 4h.
