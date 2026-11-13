@@ -21,6 +21,12 @@ Built on the earlier **property-tracker** (property counts + losses), which now 
 
 Area pills filter everything except team targets.
 
+## Pages
+- `/` Overview: the main board. Tiles, problems and targets click through to the pages below.
+- `/inbox` Guest inbox: needs a reply / problems / all, issue-type filters, search, area filter, click a conversation to read the full thread (read-only; reply in Hostaway). Short thank-you messages don't count as needing a reply.
+- `/targets` Team targets by month: each person (Google Sheet) with what's left and per-day pace, plus company targets with charts.
+- `/growth` Portfolio growth: properties now, brought on / lost, growth chart, last 12 months, searchable lists.
+
 ## Run locally
 ```bash
 npm install

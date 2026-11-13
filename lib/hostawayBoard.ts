@@ -104,14 +104,23 @@ export async function fetchConversations(sinceStamp: string): Promise<Conversati
   const json = await get<{ result?: HConversation[] }>(
     `/conversations?limit=100&offset=0&includeResources=1`
   );
-  const convs = (json.result ?? []).filter((c) => (stamp(c.messageReceivedOn) ?? "") >= sinceStamp);
+  const convs = (json.result ?? [])
+    .filter((c) => (stamp(c.messageReceivedOn) ?? "") >= sinceStamp)
+    .sort((a, b) => (stamp(b.messageReceivedOn) ?? "").localeCompare(stamp(a.messageReceivedOn) ?? ""));
 
-  // Fetch the latest messages for at most 40 conversations to stay well inside rate limits.
-  const picked = convs.slice(0, 40);
-  const results = await Promise.all(
-    picked.map(async (c): Promise<Conversation> => {
+  // Pull message text for the 60 most recent, 10 at a time, to stay inside Hostaway's rate limits.
+  const WITH_TEXT = 60;
+  const results: Conversation[] = [];
+  for (let i = 0; i < convs.length; i += 10) {
+    const batch = await Promise.all(convs.slice(i, i + 10).map((c, j) => toConversation(c, i + j < WITH_TEXT)));
+    results.push(...batch);
+  }
+  return results;
+}
+
+async function toConversation(c: HConversation, withText: boolean): Promise<Conversation> {
       let lastMessage = "";
-      try {
+      if (withText) try {
         const m = await get<{ result?: HMessage[] }>(`/conversations/${c.id}/messages?limit=10`);
         const incoming = (m.result ?? [])
           .filter((x) => x.isIncoming === 1 || x.isIncoming === true)
@@ -129,7 +138,17 @@ export async function fetchConversations(sinceStamp: string): Promise<Conversati
         lastOutgoingAt: stamp(c.messageSentOn),
         lastMessage,
       };
-    })
-  );
-  return results;
+}
+
+/** Full message thread for one conversation, oldest first. */
+export async function fetchThread(conversationId: number): Promise<Array<{ incoming: boolean; at: string; body: string }>> {
+  const m = await get<{ result?: HMessage[] }>(`/conversations/${conversationId}/messages?limit=50`);
+  return (m.result ?? [])
+    .map((x) => ({
+      incoming: x.isIncoming === 1 || x.isIncoming === true,
+      at: stamp(x.insertedOn ?? x.date) ?? "",
+      body: (x.body ?? "").trim(),
+    }))
+    .filter((x) => x.body)
+    .sort((a, b) => a.at.localeCompare(b.at));
 }

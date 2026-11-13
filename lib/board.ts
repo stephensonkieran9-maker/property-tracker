@@ -12,7 +12,7 @@ import { getPersonTargets } from "./sheets";
 let cache: { key: string; at: number; data: RawData } | null = null;
 const TTL = 3 * 60 * 1000;
 
-async function loadRaw(fromDate: string): Promise<RawData> {
+export async function loadRaw(fromDate: string): Promise<RawData> {
   if (isDemo()) return mockRawData();
   const today = londonToday();
   const key = fromDate;
@@ -64,7 +64,7 @@ export function isAck(text: string): boolean {
   return ACK.test(t);
 }
 
-function classify(text: string): { kind: ProblemKind; severity: 1 | 2 | 3 } | null {
+export function classify(text: string): { kind: ProblemKind; severity: 1 | 2 | 3 } | null {
   for (const r of RULES) if (r.words.test(text)) return { kind: r.kind, severity: r.severity };
   return null;
 }
@@ -213,6 +213,18 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
     daily.push({ date: d, bookings: day.length, revenue: Math.round(rev), cumulative: Math.round(cum) });
   }
 
+  // Nightly occupancy across the month, and the properties onboarded in it (for the Targets page).
+  const nightly: Board["month"]["nightly"] = [];
+  for (let i = 0; i < nDays; i++) {
+    const d = addDays(mStart, i);
+    const avail = units.filter((u) => u.onboardedAt <= d).length;
+    nightly.push({ date: d, pct: pct(occupiedOn(res, d).size, avail), future: d > today });
+  }
+  const onboardedUnits = units
+    .filter((u) => u.onboardedAt.startsWith(month))
+    .sort((a, b) => b.onboardedAt.localeCompare(a.onboardedAt))
+    .map((u) => ({ name: u.name, group: u.group, date: u.onboardedAt }));
+
   // ── Next 14 nights heatmap
   const dates = Array.from({ length: 14 }, (_, i) => addDays(today, i));
   const occByDate = dates.map((d) => occupiedOn(raw.reservations, d));
@@ -337,6 +349,9 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
       runningTotalLabel: `${month.slice(0, 4)} to date`,
       prevMonthRevenue: Math.round(prevMonthRevenue),
       daily,
+      nightly,
+      onboardedUnits,
+      daysInMonth: nDays,
       revenueTarget: group === "All" ? revenueTarget : 0,
     },
     next14: { dates, rows, target: NIGHTLY_OCCUPANCY_TARGET },

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
+import AreaPicker from "./AreaPicker";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
 // ── Formatting ──────────────────────────────────────────────
@@ -148,72 +149,6 @@ function Header({ data, group, setGroup, error }: { data: BoardData; group: stri
   );
 }
 
-function AreaPicker({ data, group, setGroup }: { data: BoardData; group: string; setGroup: (g: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const [q, setQ] = useState("");
-  const [hi, setHi] = useState(0);
-  const box = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
-  const total = Object.values(data.groupSizes).reduce((s, n) => s + n, 0);
-
-  const options = useMemo(() => {
-    const all = [{ name: "All", n: total }, ...data.groups.map((g) => ({ name: g, n: data.groupSizes[g] ?? 0 })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))];
-    const t = q.trim().toLowerCase();
-    return t ? all.filter((o) => o.name.toLowerCase().includes(t)) : all;
-  }, [data.groups, data.groupSizes, q, total]);
-
-  useEffect(() => {
-    if (!open) return;
-    setHi(0);
-    setTimeout(() => input.current?.focus(), 0);
-    const close = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [open]);
-  useEffect(() => setHi(0), [q]);
-
-  const pick = (g: string) => { setGroup(g); setOpen(false); setQ(""); };
-  const onKey = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") setOpen(false);
-    else if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(options.length - 1, h + 1)); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
-    else if (e.key === "Enter" && options[hi]) pick(options[hi].name);
-  };
-
-  return (
-    <div className="kb-area" ref={box}>
-      <button className={`kb-area-btn${group !== "All" ? " on" : ""}`} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0112 2.5a7 7 0 017 7C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-        <span>{group === "All" ? `All areas · ${total} properties` : `${group} · ${data.groupSizes[group] ?? 0}`}</span>
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-      {group !== "All" && (
-        <button className="kb-area-clear" onClick={() => pick("All")} aria-label="Clear area filter">×</button>
-      )}
-      {open && (
-        <div className="kb-area-pop" onKeyDown={onKey}>
-          <input ref={input} className="kb-area-search" placeholder={`Search ${data.groups.length} areas…`} value={q} onChange={(e) => setQ(e.target.value)} />
-          <div className="kb-area-list" role="listbox">
-            {options.length === 0 && <div className="kb-area-none">No area matches “{q}”</div>}
-            {options.map((o, i) => (
-              <button
-                key={o.name}
-                role="option"
-                aria-selected={o.name === group}
-                className={`kb-area-opt${i === hi ? " hi" : ""}${o.name === group ? " sel" : ""}`}
-                onMouseEnter={() => setHi(i)}
-                onClick={() => pick(o.name)}
-              >
-                <span>{o.name === "All" ? "All areas" : o.name}</span>
-                <span className="kb-area-n">{o.n}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function Top({ data }: { data: BoardData }) {
   const { tonight, today_, inbox } = data;
@@ -234,7 +169,12 @@ function Top({ data }: { data: BoardData }) {
       <div className="kb-hero">
         <span className="kb-hero-tag">Needs you now</span>
         <p>{line}</p>
-        <button className="kb-listen" onClick={listen}>{I.speaker} Listen</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="kb-listen" onClick={listen}>{I.speaker} Listen</button>
+          {top && (
+            <a className="kb-listen" style={{ textDecoration: "none" }} href={`/inbox?view=all&c=${top.conversationId}`}>Open message →</a>
+          )}
+        </div>
       </div>
       <div className="kb-kpis">
         <div className="kb-kpi">
@@ -262,18 +202,18 @@ function Top({ data }: { data: BoardData }) {
           <span className="kb-kpi-v">{tonight.leaving}</span>
           <span className="kb-kpi-s">Check-outs to turn over</span>
         </div>
-        <div className="kb-kpi">
+        <a className="kb-kpi kb-click" href="/inbox?view=reply">
           <span className="kb-kpi-l">Unanswered</span>
           <span className="kb-kpi-v">{inbox.unanswered}</span>
           <span className="kb-kpi-s">Oldest {stampLabel(inbox.oldestUnanswered, data.today)}</span>
-        </div>
-        <div className="kb-kpi">
+        </a>
+        <a className="kb-kpi kb-click" href="/inbox?view=problems">
           <span className="kb-kpi-l">Problems flagged</span>
           <span className="kb-kpi-v">{inbox.problems.filter((p) => p.kind !== "Unanswered").length}</span>
           <span className="kb-kpi-s">
             <span className="kb-down">{inbox.problems.filter((p) => p.severity === 3).length} urgent</span> · from guest messages
           </span>
-        </div>
+        </a>
       </div>
     </div>
   );
@@ -288,11 +228,12 @@ function NeedsYou({ data }: { data: BoardData }) {
           <h3>Needs you</h3>
           <p className="kb-sub">Problems spotted in the guest inbox, most urgent first</p>
         </div>
+        <a className="kb-link" href="/inbox?view=problems">Open inbox →</a>
       </div>
       <div className="kb-list">
         {ps.length === 0 && <div className="kb-empty">Nothing flagged. Nice.</div>}
         {ps.slice(0, 8).map((p) => (
-          <div className="kb-row" key={p.conversationId}>
+          <a className="kb-row kb-row-link" key={p.conversationId} href={`/inbox?view=all&c=${p.conversationId}`}>
             <span className={`kb-dot s${p.severity}`} />
             <div className="kb-kind">
               <b>{p.kind}</b>
@@ -306,7 +247,7 @@ function NeedsYou({ data }: { data: BoardData }) {
               </div>
             </div>
             <div className={`kb-wait${p.unanswered && p.waitingMins > 60 ? " late" : ""}`}>{waited(p.waitingMins)} ago</div>
-          </div>
+          </a>
         ))}
       </div>
     </section>
@@ -341,7 +282,10 @@ function Targets({ data }: { data: BoardData }) {
   const { people } = data;
   return (
     <section className="kb-card">
-      <h3>Team targets</h3>
+      <div className="kb-cardhead">
+        <h3>Team targets</h3>
+        <a className="kb-link" href={`/targets${data.month.isCurrent ? "" : `?month=${data.month.key}`}`}>All targets →</a>
+      </div>
       <p className="kb-sub">{data.month.label}{data.month.isCurrent ? " · marker = where we should be today" : ""}</p>
       <div className="kb-target-group">
         People

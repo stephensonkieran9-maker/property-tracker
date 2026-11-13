@@ -115,3 +115,20 @@ export async function getPersonTargets(month: string): Promise<{ people: PersonT
     return { people: DEFAULTS, source: "default", error: e instanceof Error ? e.message : "Sheet error" };
   }
 }
+
+/** Each person's target and actual for the `n` months up to and including `month`. */
+export async function getPersonHistory(month: string, n = 6): Promise<Record<string, Array<{ month: string; target: number; actual: number | null }>>> {
+  const months: string[] = [];
+  let [y, m] = month.split("-").map(Number);
+  for (let i = 0; i < n; i++) {
+    months.unshift(`${y}-${String(m).padStart(2, "0")}`);
+    m -= 1;
+    if (m === 0) { m = 12; y -= 1; }
+  }
+  const out: Record<string, Array<{ month: string; target: number; actual: number | null }>> = {};
+  for (const mo of months) {
+    const { people } = await getPersonTargets(mo);
+    for (const p of people) (out[p.person] ??= []).push({ month: mo, target: p.target, actual: p.actual });
+  }
+  return out;
+}

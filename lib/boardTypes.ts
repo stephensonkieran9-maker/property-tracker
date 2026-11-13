@@ -138,6 +138,10 @@ export interface Board {
     prevMonthRevenue: number;
     /** Per-day series for the month. */
     daily: Array<{ date: string; bookings: number; revenue: number; cumulative: number }>;
+    /** Occupancy for every night of the month (future nights = on the books so far). */
+    nightly: Array<{ date: string; pct: number; future: boolean }>;
+    onboardedUnits: Array<{ name: string; group: string; date: string }>;
+    daysInMonth: number;
     revenueTarget: number;
   };
 

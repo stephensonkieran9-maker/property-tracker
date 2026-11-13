@@ -6,12 +6,12 @@ const I = {
   target: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5"/></svg>,
 };
 
-type Page = "overview" | "growth";
+type Page = "overview" | "inbox" | "targets" | "growth";
 
-const ITEMS: Array<{ key: Page | "inbox" | "targets"; label: string; href?: string; icon: JSX.Element }> = [
+const ITEMS: Array<{ key: Page; label: string; href?: string; icon: JSX.Element }> = [
   { key: "overview", label: "Overview", href: "/", icon: I.grid },
-  { key: "inbox", label: "Inbox", icon: I.inbox },
-  { key: "targets", label: "Targets", icon: I.target },
+  { key: "inbox", label: "Inbox", href: "/inbox", icon: I.inbox },
+  { key: "targets", label: "Targets", href: "/targets", icon: I.target },
   { key: "growth", label: "Growth", href: "/growth", icon: I.growth },
 ];
 
