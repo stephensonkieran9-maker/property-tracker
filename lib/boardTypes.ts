@@ -89,6 +89,8 @@ export interface Board {
   today: string;
   greetingName: string;
   groups: string[];
+  /** Number of properties in each area. */
+  groupSizes: Record<string, number>;
   group: string; // "All" or a group
 
   tonight: {
@@ -141,7 +143,7 @@ export interface Board {
 
   next14: {
     dates: string[];
-    rows: Array<{ group: string; pcts: number[] }>;
+    rows: Array<{ group: string; units: number; kind: "total" | "area" | "property"; pcts: number[] }>;
     target: number;
   };
 

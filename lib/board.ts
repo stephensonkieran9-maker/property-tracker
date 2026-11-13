@@ -201,12 +201,30 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
 
   // ── Next 14 nights heatmap
   const dates = Array.from({ length: 14 }, (_, i) => addDays(today, i));
-  const rowGroups = group === "All" ? groups : [group];
   const occByDate = dates.map((d) => occupiedOn(raw.reservations, d));
-  const rows = rowGroups.map((g) => {
-    const gu = raw.units.filter((u) => u.group === g);
-    return { group: g, pcts: occByDate.map((set) => pct(gu.filter((u) => set.has(u.id)).length, gu.length)) };
+  const rowFor = (label: string, us: Unit[], kind: Board["next14"]["rows"][number]["kind"]) => ({
+    group: label,
+    units: us.length,
+    kind,
+    pcts: occByDate.map((set) => pct(us.filter((u) => set.has(u.id)).length, us.length)),
   });
+  // First row is the total. With "All": one row per area, biggest first.
+  // With one area picked: one row per property in it (each cell is booked / empty).
+  const rows =
+    group === "All"
+      ? [
+          rowFor("All properties", raw.units, "total"),
+          ...groups
+            .map((g) => rowFor(g, raw.units.filter((u) => u.group === g), "area"))
+            .sort((a, b) => b.units - a.units || a.group.localeCompare(b.group)),
+        ]
+      : [
+          rowFor(`All in ${group}`, units, "total"),
+          ...units
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((u) => rowFor(u.name, [u], "property")),
+        ];
 
   // ── Portfolio + targets
   const onboardedThisMonth = units.filter((u) => u.onboardedAt.startsWith(month)).length;
@@ -269,6 +287,7 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
     today,
     greetingName: process.env.GREETING_NAME || "team",
     groups,
+    groupSizes: Object.fromEntries(groups.map((g) => [g, raw.units.filter((u) => u.group === g).length])),
     group,
     tonight: {
       occupancyPct: pct(occTonight.size, units.length),

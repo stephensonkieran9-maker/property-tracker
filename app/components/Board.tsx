@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
 // ── Formatting ──────────────────────────────────────────────
@@ -147,14 +147,75 @@ function Header({ data, group, setGroup, error }: { data: BoardData; group: stri
       <div className="kb-headr">
         {data.demo && <span className="kb-demo">DEMO DATA</span>}
         <span className="kb-updated">{error ? "Refresh failed · " : ""}Updated {data.generatedAt.slice(11, 16)}</span>
-        <div className="kb-pills">
-          {["All", ...data.groups].map((g) => (
-            <button key={g} className={`kb-pill${g === group ? " on" : ""}`} onClick={() => setGroup(g)}>
-              {g}
-            </button>
-          ))}
-        </div>
+        <AreaPicker data={data} group={group} setGroup={setGroup} />
       </div>
+    </div>
+  );
+}
+
+function AreaPicker({ data, group, setGroup }: { data: BoardData; group: string; setGroup: (g: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState("");
+  const [hi, setHi] = useState(0);
+  const box = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const total = Object.values(data.groupSizes).reduce((s, n) => s + n, 0);
+
+  const options = useMemo(() => {
+    const all = [{ name: "All", n: total }, ...data.groups.map((g) => ({ name: g, n: data.groupSizes[g] ?? 0 })).sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))];
+    const t = q.trim().toLowerCase();
+    return t ? all.filter((o) => o.name.toLowerCase().includes(t)) : all;
+  }, [data.groups, data.groupSizes, q, total]);
+
+  useEffect(() => {
+    if (!open) return;
+    setHi(0);
+    setTimeout(() => input.current?.focus(), 0);
+    const close = (e: MouseEvent) => { if (box.current && !box.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+  useEffect(() => setHi(0), [q]);
+
+  const pick = (g: string) => { setGroup(g); setOpen(false); setQ(""); };
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") setOpen(false);
+    else if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(options.length - 1, h + 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(0, h - 1)); }
+    else if (e.key === "Enter" && options[hi]) pick(options[hi].name);
+  };
+
+  return (
+    <div className="kb-area" ref={box}>
+      <button className={`kb-area-btn${group !== "All" ? " on" : ""}`} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0112 2.5a7 7 0 017 7C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        <span>{group === "All" ? `All areas · ${total} properties` : `${group} · ${data.groupSizes[group] ?? 0}`}</span>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      {group !== "All" && (
+        <button className="kb-area-clear" onClick={() => pick("All")} aria-label="Clear area filter">×</button>
+      )}
+      {open && (
+        <div className="kb-area-pop" onKeyDown={onKey}>
+          <input ref={input} className="kb-area-search" placeholder={`Search ${data.groups.length} areas…`} value={q} onChange={(e) => setQ(e.target.value)} />
+          <div className="kb-area-list" role="listbox">
+            {options.length === 0 && <div className="kb-area-none">No area matches “{q}”</div>}
+            {options.map((o, i) => (
+              <button
+                key={o.name}
+                role="option"
+                aria-selected={o.name === group}
+                className={`kb-area-opt${i === hi ? " hi" : ""}${o.name === group ? " sel" : ""}`}
+                onMouseEnter={() => setHi(i)}
+                onClick={() => pick(o.name)}
+              >
+                <span>{o.name === "All" ? "All areas" : o.name}</span>
+                <span className="kb-area-n">{o.n}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -424,13 +485,22 @@ function cellStyle(pct: number, target: number): React.CSSProperties {
   return { background: `rgba(242,193,78,${a})`, color: a > 0.75 ? "#1a1406" : "#f6dfa3" };
 }
 
+const ROWS_SHOWN = 10;
+
 function Heatmap({ data }: { data: BoardData }) {
   const { dates, rows, target } = data.next14;
-  const cols = `minmax(90px, 130px) repeat(${dates.length}, minmax(0, 1fr))`;
+  const [all, setAll] = useState(false);
+  const cols = `minmax(120px, 190px) repeat(${dates.length}, minmax(0, 1fr))`;
+  const shown = all ? rows : rows.slice(0, ROWS_SHOWN);
+  const perProperty = rows[1]?.kind === "property";
   return (
     <section className="kb-card">
       <h3>Next 14 nights</h3>
-      <p className="kb-sub">Share of properties booked each night. Grey is a night under the {target}% target.</p>
+      <p className="kb-sub">
+        {perProperty
+          ? "Each property, night by night: gold is booked, grey is empty. Top row is the area as a whole."
+          : `% of properties booked each night. Top row is the whole portfolio; areas below, biggest first. Grey is under the ${target}% target.`}
+      </p>
       <div className="kb-heat" style={{ gridTemplateColumns: cols }}>
         <span />
         {dates.map((d) => {
@@ -443,21 +513,35 @@ function Heatmap({ data }: { data: BoardData }) {
             </span>
           );
         })}
-        {rows.map((r) => (
-          <Row key={r.group} label={r.group} pcts={r.pcts} target={target} />
+        {shown.map((r) => (
+          <Row key={r.kind + r.group} row={r} target={target} />
         ))}
       </div>
+      {rows.length > ROWS_SHOWN && (
+        <button className="kb-more" onClick={() => setAll((v) => !v)}>
+          {all ? "Show fewer" : `Show all ${rows.length - 1} ${perProperty ? "properties" : "areas"}`}
+        </button>
+      )}
     </section>
   );
 }
 
-function Row({ label, pcts, target }: { label: string; pcts: number[]; target: number }) {
+function Row({ row, target }: { row: BoardData["next14"]["rows"][number]; target: number }) {
+  const single = row.kind === "property";
   return (
     <>
-      <span className="kb-heat-l">{label}</span>
-      {pcts.map((p, i) => (
-        <span key={i} className="kb-cell" style={cellStyle(p, target)} title={`${label}: ${p}%`}>
-          {p}
+      <span className={`kb-heat-l${row.kind === "total" ? " total" : ""}`} title={row.group}>
+        {row.group}
+        {row.kind !== "property" && <em>{row.units}</em>}
+      </span>
+      {row.pcts.map((p, i) => (
+        <span
+          key={i}
+          className={`kb-cell${row.kind === "total" ? " total" : ""}`}
+          style={single ? (p >= 100 ? { background: "rgba(242,193,78,0.9)", color: "#1a1406" } : { background: "#222225", color: "#55555b" }) : cellStyle(p, target)}
+          title={single ? `${row.group}: ${p >= 100 ? "booked" : "empty"}` : `${row.group}: ${p}% of ${row.units}`}
+        >
+          {single ? "" : p}
         </span>
       ))}
     </>
@@ -465,22 +549,32 @@ function Row({ label, pcts, target }: { label: string; pcts: number[]; target: n
 }
 
 function ByGroup({ data }: { data: BoardData }) {
-  const sorted = useMemo(() => [...data.tonight.byGroup].sort((a, b) => b.pct - a.pct), [data]);
+  const [all, setAll] = useState(false);
+  const sorted = useMemo(
+    () => [...data.tonight.byGroup].sort((a, b) => b.units - a.units || b.pct - a.pct || a.group.localeCompare(b.group)),
+    [data]
+  );
+  const shown = all ? sorted : sorted.slice(0, 8);
   return (
     <section className="kb-card">
       <h3>Tonight by area</h3>
-      <p className="kb-sub">Occupied properties tonight</p>
-      {sorted.map((g) => (
+      <p className="kb-sub">Occupied properties tonight, biggest areas first</p>
+      {shown.map((g) => (
         <div className="kb-bg-row" key={g.group}>
           <div className="kb-bg-top">
             <span>{g.group}</span>
-            <span>{g.pct}% · {g.occupied} of {g.units}</span>
+            <span>{g.occupied} of {g.units} · {g.pct}%</span>
           </div>
           <div className="kb-meter" style={{ height: 5 }}>
             <i style={{ width: `${g.pct}%`, background: g.pct < data.next14.target ? "#66666c" : undefined }} />
           </div>
         </div>
       ))}
+      {sorted.length > 8 && (
+        <button className="kb-more" onClick={() => setAll((v) => !v)}>
+          {all ? "Show fewer" : `Show all ${sorted.length} areas`}
+        </button>
+      )}
     </section>
   );
 }

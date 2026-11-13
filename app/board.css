@@ -185,3 +185,34 @@
 .kb-target-group span { font-weight: 400; font-size: 10.5px; color: var(--k-faint); text-align: right; }
 .kb-target-group + .kb-target { border-top: 0; }
 .kb-status.pending { color: var(--k-muted); background: var(--k-card-2); }
+
+/* Area picker */
+.kb-area { position: relative; display: flex; align-items: center; gap: 4px; }
+.kb-area-btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px;
+  background: var(--k-panel); border: 1px solid var(--k-line); color: var(--k-text); font-size: 12.5px; cursor: pointer;
+}
+.kb-area-btn:hover { border-color: #3a3a40; }
+.kb-area-btn.on { border-color: rgba(242,193,78,0.5); color: var(--k-gold); }
+.kb-area-btn svg { color: var(--k-muted); flex: none; }
+.kb-area-clear { width: 26px; height: 26px; border-radius: 8px; border: 0; background: var(--k-card-2); color: var(--k-muted); cursor: pointer; font-size: 15px; }
+.kb-area-pop {
+  position: absolute; right: 0; top: 40px; z-index: 20; width: 300px; background: #18181b; border: 1px solid var(--k-line);
+  border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.5); overflow: hidden;
+}
+.kb-area-search { width: 100%; border: 0; border-bottom: 1px solid var(--k-line); background: transparent; color: var(--k-text); padding: 12px 14px; font-size: 13px; outline: none; font-family: inherit; }
+.kb-area-search::placeholder { color: var(--k-faint); }
+.kb-area-list { max-height: 340px; overflow-y: auto; padding: 4px; }
+.kb-area-opt { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; border: 0; background: none; color: var(--k-text); padding: 8px 10px; border-radius: 8px; font-size: 12.5px; text-align: left; cursor: pointer; }
+.kb-area-opt.hi { background: var(--k-card-2); }
+.kb-area-opt.sel { color: var(--k-gold); }
+.kb-area-n { color: var(--k-faint); font-variant-numeric: tabular-nums; font-size: 11.5px; }
+.kb-area-none { padding: 14px; color: var(--k-faint); font-size: 12px; }
+
+/* Heatmap extras */
+.kb-heat-l em { font-style: normal; color: var(--k-faint); margin-left: 6px; font-size: 10.5px; }
+.kb-heat-l.total { color: var(--k-text); font-weight: 600; }
+.kb-cell.total { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); }
+.kb-heat > .kb-heat-l.total ~ .kb-heat-l:not(.total) { }
+.kb-more { margin-top: 12px; background: none; border: 1px solid var(--k-line); color: var(--k-muted); border-radius: 8px; padding: 6px 12px; font-size: 11.5px; cursor: pointer; }
+.kb-more:hover { color: var(--k-text); }
