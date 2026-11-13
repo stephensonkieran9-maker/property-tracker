@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
+import { readCache, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Finance as FinanceData, FinanceTotals } from "@/lib/finance";
 
@@ -66,12 +67,16 @@ export default function Finance() {
     const q = new URLSearchParams({ period, basis });
     if (key) q.set("key", key);
     if (group !== "All") q.set("group", group);
-    fetch(`/api/finance?${q}`, { cache: "no-store" })
+    const url = `/api/finance?${q}`;
+    const cached = readCache<FinanceData>(url);
+    if (cached) setData(cached);
+    fetch(url, { cache: "no-store" })
       .then(async (r) => ({ ok: r.ok, j: await r.json() }))
       .then(({ ok, j }) => {
         if (!live) return;
         if (!ok) throw new Error(j.error || "Failed to load");
         setData(j);
+        writeCache(url, j);
         setError(null);
       })
       .catch((e) => live && setError(e instanceof Error ? e.message : "Failed to load"))

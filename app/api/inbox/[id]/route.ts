@@ -3,6 +3,7 @@ import { getThread } from "@/lib/inbox";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   const id = Number(params.id);

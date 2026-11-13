@@ -1,7 +1,7 @@
 import type { Listing } from "./types";
 import { mockListings } from "./mock";
 
-export const BASE = "https://api.hostaway.com/v1";
+export const BASE = process.env.HOSTAWAY_API_BASE || "https://api.hostaway.com/v1";
 
 export function isDemo(): boolean {
   if (process.env.DEMO_MODE === "1") return true;

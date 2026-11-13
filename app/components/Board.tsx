@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
+import { readCache, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
@@ -77,10 +78,14 @@ export default function Board() {
       const q = new URLSearchParams();
       if (m) q.set("month", m);
       if (g !== "All") q.set("group", g);
-      const res = await fetch(`/api/board?${q}`, { cache: "no-store" });
+      const url = `/api/board?${q}`;
+      const cached = readCache<BoardData>(url);
+      if (cached) setData(cached);
+      const res = await fetch(url, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
+      writeCache(url, json);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");

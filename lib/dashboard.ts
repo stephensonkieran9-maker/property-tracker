@@ -1,6 +1,6 @@
 import type { DashboardData, Listing, OnboardEvent } from "./types";
 import { fetchAllListings, isDemo } from "./hostaway";
-import { recordAndDiffLosses } from "./store";
+import { getSnapshot } from "./snapshot";
 import { mockLosses } from "./mock";
 
 function todayStr(): string {
@@ -40,7 +40,8 @@ function buildHistory(dates: string[], today: string): Array<{ date: string; cou
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const listings: Listing[] = await fetchAllListings();
+  const snap = isDemo() ? null : await getSnapshot();
+  const listings: Listing[] = snap ? snap.listings : await fetchAllListings();
   const today = todayStr();
   const month = today.slice(0, 7);
 
@@ -58,12 +59,10 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   // Diff the live roster against the last snapshot to detect losses.
   // Never let a store hiccup break the dashboard.
-  const { losses, trackingSince } = isDemo()
-    ? { losses: mockLosses(), trackingSince: "2025-06-01" }
-    : await recordAndDiffLosses(listings, today).catch(() => ({
-        losses: [] as Awaited<ReturnType<typeof recordAndDiffLosses>>["losses"],
-        trackingSince: null as string | null,
-      }));
+  // Loss tracking runs when the snapshot refreshes (lib/snapshot.ts), not on every page load.
+  const { losses, trackingSince } = snap
+    ? { losses: snap.losses.map((l) => ({ date: l.date, id: l.id, name: l.name, city: l.group })), trackingSince: snap.trackingSince }
+    : { losses: mockLosses(), trackingSince: "2025-06-01" };
 
   const thisMonth = dates.filter((d) => d.startsWith(month)).length;
   const lostThisMonth = losses.filter((l) => l.date.startsWith(month)).length;
@@ -87,6 +86,6 @@ export async function getDashboardData(): Promise<DashboardData> {
     losses,
     stats,
     demo: isDemo(),
-    generatedAt: new Date().toISOString(),
+    generatedAt: new Date(snap?.fetchedAt ?? Date.now()).toISOString(),
   };
 }

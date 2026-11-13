@@ -1,43 +1,17 @@
 import type { Board, Conversation, Problem, ProblemKind, RawData, Reservation, TargetProgress, Unit } from "./boardTypes";
 import { addDays, daysInMonth, londonStamp, londonToday, minutesBetween, monthEnd, monthLabel, monthStart, prevMonth, weekdayShort } from "./dates";
 import { NIGHTLY_OCCUPANCY_TARGET, TEAM_TARGETS, targetFor } from "./targets";
-import { isDemo, fetchAllListings } from "./hostaway";
-import { fetchConversations, fetchReservations } from "./hostawayBoard";
-import { recordAndDiffLosses } from "./store";
+import { isDemo } from "./hostaway";
+import { getSnapshot } from "./snapshot";
 import { mockRawData } from "./mockBoard";
 import { getPersonTargets } from "./sheets";
 
-// ── Raw data (cached briefly so filter / month clicks don't re-hit Hostaway) ──
+// ── Raw data: one shared snapshot (see lib/snapshot.ts) ──
 
-let cache: { key: string; at: number; data: RawData } | null = null;
-const TTL = 3 * 60 * 1000;
-
-export async function loadRaw(fromDate: string): Promise<RawData> {
+/** Everything the pages need. `_fromDate` is kept for older callers; the snapshot covers ~26 months. */
+export async function loadRaw(_fromDate?: string): Promise<RawData & { fetchedAt?: number }> {
   if (isDemo()) return mockRawData();
-  const today = londonToday();
-  const key = fromDate;
-  if (cache && cache.key <= key && Date.now() - cache.at < TTL) return cache.data;
-
-  const listings = await fetchAllListings();
-  const units: Unit[] = listings.map((l) => ({
-    id: l.id,
-    name: l.name,
-    group: l.city?.trim() || "Other",
-    onboardedAt: l.onboardedAt,
-  }));
-  const [reservations, conversations, lossState] = await Promise.all([
-    fetchReservations(fromDate, addDays(today, 400)),
-    fetchConversations(addDays(today, -14) + " 00:00").catch(() => [] as Conversation[]),
-    recordAndDiffLosses(listings, today).catch(() => ({ losses: [], trackingSince: null })),
-  ]);
-  const data: RawData = {
-    units,
-    reservations,
-    conversations,
-    losses: lossState.losses.map((l) => ({ date: l.date, id: l.id, name: l.name, group: l.city?.trim() || "Other" })),
-  };
-  cache = { key, at: Date.now(), data };
-  return data;
+  return getSnapshot();
 }
 
 // ── Inbox problem spotting ──────────────────────────────────
@@ -309,7 +283,7 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
 
   return {
     demo: isDemo(),
-    generatedAt: nowStamp,
+    generatedAt: raw.fetchedAt ? londonStamp(new Date(raw.fetchedAt)) : nowStamp,
     today,
     greetingName: process.env.GREETING_NAME || "team",
     groups,

@@ -6,11 +6,18 @@ import type { Conversation, Reservation } from "./boardTypes";
 
 async function get<T>(path: string): Promise<T> {
   const token = await getToken();
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
-    cache: "no-store",
-  });
-  if (!res.ok) {
+  let res: Response | null = null;
+  // Back off and retry if Hostaway rate-limits the parallel requests.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    res = await fetch(`${BASE}${path}`, {
+      headers: { Authorization: `Bearer ${token}`, "Cache-Control": "no-cache" },
+      cache: "no-store",
+    });
+    if (res.status !== 429 && res.status < 500) break;
+    await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+  }
+  if (!res || !res.ok) {
+    if (!res) throw new Error(`Hostaway ${path.split("?")[0]} failed`);
     const text = await res.text().catch(() => "");
     throw new Error(`Hostaway ${path.split("?")[0]} failed (${res.status}): ${text.slice(0, 200)}`);
   }
@@ -56,38 +63,64 @@ const LIVE = new Set(["new", "modified", "ownerStay"]);
  * Inquiries, declined and expired requests are dropped.
  */
 export async function fetchReservations(from: string, to: string): Promise<Reservation[]> {
-  const out: Reservation[] = [];
   const limit = 100;
-  for (let page = 0; page < 200; page++) {
-    const q = `limit=${limit}&offset=${page * limit}&arrivalStartDate=${from}&arrivalEndDate=${to}`;
-    const json = await get<{ result?: HReservation[] }>(`/reservations?${q}`);
-    const batch = json.result ?? [];
-    for (const r of batch) {
-      const status = r.status ?? "";
-      const cancelled = status === "cancelled";
-      if (!cancelled && !LIVE.has(status)) continue;
-      if (status === "ownerStay") continue; // owner stays don't earn revenue
-      if (!r.arrivalDate || !r.departureDate) continue;
-      out.push({
-        id: r.id,
-        listingId: r.listingMapId ?? 0,
-        listingName: r.listingName ?? `Listing ${r.listingMapId ?? ""}`,
-        guestName:
-          r.guestName || [r.guestFirstName, r.guestLastName].filter(Boolean).join(" ") || "Guest",
-        arrival: r.arrivalDate.slice(0, 10),
-        departure: r.departureDate.slice(0, 10),
-        bookedOn: stamp(r.reservationDate) ?? stamp(r.insertedOn) ?? r.arrivalDate.slice(0, 10) + " 00:00",
-        cancelledOn: r.cancellationDate ? r.cancellationDate.slice(0, 10) : undefined,
-        total: Number(r.totalPrice) || 0,
-        status: cancelled ? "cancelled" : "confirmed",
-        channel: r.channelName,
-        checkInTime: r.checkInTime ?? undefined,
-        commission: optNum(r.channelCommissionAmount) ?? optNum(r.hostChannelFee),
-        cleaningFee: optNum(r.cleaningFee),
-        tax: optNum(r.taxAmount),
-      });
+  const CONCURRENCY = 6;
+  const page = (n: number) =>
+    get<{ result?: HReservation[]; count?: number }>(
+      `/reservations?limit=${limit}&offset=${n * limit}&arrivalStartDate=${from}&arrivalEndDate=${to}`
+    );
+
+  // First page tells us the total, then the rest are fetched 6 at a time instead of one by one.
+  const first = await page(0);
+  const batches: HReservation[][] = [first.result ?? []];
+  if ((first.result ?? []).length === limit) {
+    const total = typeof first.count === "number" ? Math.ceil(first.count / limit) : null;
+    let n = 1;
+    let done = false;
+    while (!done && n < 300) {
+      const wave = Array.from({ length: CONCURRENCY }, (_, i) => n + i).filter((k) => total === null || k < total);
+      if (wave.length === 0) break;
+      const results = await Promise.all(wave.map(page));
+      for (const r of results) {
+        const b = r.result ?? [];
+        batches.push(b);
+        if (b.length < limit) done = true; // reached the end
+      }
+      n += wave.length;
+      if (total !== null && n >= total) done = true;
     }
-    if (batch.length < limit) break;
+  }
+
+  const out: Reservation[] = [];
+  const seen = new Set<number>();
+  for (const batch of batches) {
+    for (const r of batch) {
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+        const status = r.status ?? "";
+        const cancelled = status === "cancelled";
+        if (!cancelled && !LIVE.has(status)) continue;
+        if (status === "ownerStay") continue; // owner stays don't earn revenue
+        if (!r.arrivalDate || !r.departureDate) continue;
+        out.push({
+          id: r.id,
+          listingId: r.listingMapId ?? 0,
+          listingName: r.listingName ?? `Listing ${r.listingMapId ?? ""}`,
+          guestName:
+            r.guestName || [r.guestFirstName, r.guestLastName].filter(Boolean).join(" ") || "Guest",
+          arrival: r.arrivalDate.slice(0, 10),
+          departure: r.departureDate.slice(0, 10),
+          bookedOn: stamp(r.reservationDate) ?? stamp(r.insertedOn) ?? r.arrivalDate.slice(0, 10) + " 00:00",
+          cancelledOn: r.cancellationDate ? r.cancellationDate.slice(0, 10) : undefined,
+          total: Number(r.totalPrice) || 0,
+          status: cancelled ? "cancelled" : "confirmed",
+          channel: r.channelName,
+          checkInTime: r.checkInTime ?? undefined,
+          commission: optNum(r.channelCommissionAmount) ?? optNum(r.hostChannelFee),
+          cleaningFee: optNum(r.cleaningFee),
+          tax: optNum(r.taxAmount),
+        });
+      }
   }
   return out;
 }

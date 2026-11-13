@@ -4,6 +4,7 @@ import { londonToday } from "@/lib/dates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   const m = req.nextUrl.searchParams.get("month");

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
+import { readCache, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Inbox as InboxData, InboxItem, ThreadMessage } from "@/lib/inbox";
 
@@ -54,10 +55,14 @@ export default function Inbox() {
   const load = useCallback(async (g: string) => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/inbox${g !== "All" ? `?group=${encodeURIComponent(g)}` : ""}`, { cache: "no-store" });
+      const url = `/api/inbox${g !== "All" ? `?group=${encodeURIComponent(g)}` : ""}`;
+      const cached = readCache<InboxData>(url);
+      if (cached) setData(cached);
+      const res = await fetch(url, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
+      writeCache(url, json);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");

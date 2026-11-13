@@ -28,6 +28,13 @@ Area pills filter everything except team targets.
 - `/finance` Finance: month or year, earned (by stay) or sold (by booking date), revenue, after-commission, nightly rate, revenue per available night, occupancy, booking value, cancellations; revenue by month vs last year, by channel, by area, by day, money on the books for the next 6 months, and a sortable property table with CSV download. Set `MANAGEMENT_FEE_PCT` to show an estimated Keapr fee.
 - `/growth` Portfolio growth: properties now, brought on / lost, growth chart, last 12 months, searchable lists.
 
+## Speed: how data is cached
+- `lib/snapshot.ts` keeps one shared snapshot of Hostaway data (listings, ~26 months of bookings, recent guest messages, losses) in memory and in a **private** Vercel Blob file (`keapr-board/cache/snapshot.json`).
+- Pages read the snapshot instantly. If it's over 5 minutes old, the page still answers straight away and a fresh copy is pulled in the background. Only the very first load (no snapshot yet) waits for Hostaway.
+- Booking pages are fetched 6 at a time, with back-off if Hostaway rate-limits.
+- The browser keeps the last response per page (`lib/clientCache.ts`), so repeat visits show numbers immediately and swap in fresh ones.
+- The daily cron (`/api/snapshot`) forces a full refresh and records lost properties.
+
 ## Run locally
 ```bash
 npm install

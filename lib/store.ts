@@ -85,6 +85,7 @@ export async function recordAndDiffLosses(
   if (!storeAvailable()) return { losses: [], trackingSince: null };
 
   const state = await load();
+  const before = JSON.stringify({ r: state.roster.map((x) => x.id).sort(), l: state.losses.length, t: state.trackingSince });
   if (!state.trackingSince) state.trackingSince = today;
 
   const liveIds = new Set(live.map((l) => l.id));
@@ -100,7 +101,9 @@ export async function recordAndDiffLosses(
   // Refresh the roster to the current live set.
   state.roster = live.map((l) => ({ id: l.id, name: l.name, city: l.city }));
 
-  await save(state);
+  // Only write when the roster or losses actually changed.
+  const after = JSON.stringify({ r: state.roster.map((x) => x.id).sort(), l: state.losses.length, t: state.trackingSince });
+  if (after !== before) await save(state);
 
   const losses = [...state.losses].sort((a, b) => b.date.localeCompare(a.date));
   return { losses, trackingSince: state.trackingSince };

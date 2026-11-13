@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Sidebar from "./Sidebar";
+import { readCache, writeCache } from "@/lib/clientCache";
 import type { DashboardData } from "@/lib/types";
 
 const MONTHS_SHOWN = 12;
@@ -45,10 +46,13 @@ export default function Growth() {
   const load = useCallback(async () => {
     setBusy(true);
     try {
+      const cached = readCache<DashboardData>("/api/data");
+      if (cached) setData(cached);
       const res = await fetch("/api/data", { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
+      writeCache("/api/data", json);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");

@@ -59,8 +59,17 @@ export interface Finance {
   forward: Array<{ month: string; revenue: number; occupancyPct: number }>;
 }
 
-const nightsBetween = (a: string, b: string) =>
-  Math.round((new Date(b + "T12:00:00Z").getTime() - new Date(a + "T12:00:00Z").getTime()) / 86400000);
+// Date strings → day numbers, cached: the same few thousand dates are compared hundreds of thousands of times.
+const dayCache = new Map<string, number>();
+function dayNum(d: string): number {
+  let n = dayCache.get(d);
+  if (n === undefined) {
+    n = Math.round(Date.parse(d + "T12:00:00Z") / 86400000);
+    dayCache.set(d, n);
+  }
+  return n;
+}
+const nightsBetween = (a: string, b: string) => dayNum(b) - dayNum(a);
 
 /** Revenue, nights and fees from one booking that fall inside [start, end] (inclusive dates). */
 function share(r: Reservation, start: string, end: string, basis: Basis) {
@@ -71,16 +80,20 @@ function share(r: Reservation, start: string, end: string, basis: Basis) {
     const f = inside ? 1 : 0;
     return { f, nights: inside ? total : 0 };
   }
-  const a = r.arrival > start ? r.arrival : start;
-  const endEx = addDays(end, 1);
-  const b = r.departure < endEx ? r.departure : endEx;
-  const nights = Math.max(0, nightsBetween(a, b));
+  if (r.departure <= start || r.arrival > end) return { f: 0, nights: 0 };
+  const a = Math.max(dayNum(r.arrival), dayNum(start));
+  const b = Math.min(dayNum(r.departure), dayNum(end) + 1);
+  const nights = Math.max(0, b - a);
   return { f: nights / total, nights };
 }
 
 function availableNights(units: Unit[], start: string, end: string): number {
+  // Each property is available from the later of the period start and its onboarding date.
   let n = 0;
-  for (let d = start; d <= end; d = addDays(d, 1)) n += units.filter((u) => u.onboardedAt <= d).length;
+  for (const u of units) {
+    const from = u.onboardedAt > start ? u.onboardedAt : start;
+    if (from <= end) n += nightsBetween(from, end) + 1;
+  }
   return n;
 }
 
@@ -286,7 +299,7 @@ export async function getFinance(opts: { period?: string; key?: string; basis?: 
 
   return {
     demo: isDemo(),
-    generatedAt: londonStamp(),
+    generatedAt: raw.fetchedAt ? londonStamp(new Date(raw.fetchedAt)) : londonStamp(),
     today,
     period,
     key,

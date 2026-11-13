@@ -85,7 +85,7 @@ export async function getInbox(opts: { group?: string }): Promise<Inbox> {
 
   return {
     demo: isDemo(),
-    generatedAt: now,
+    generatedAt: raw.fetchedAt ? londonStamp(new Date(raw.fetchedAt)) : now,
     today,
     group,
     groups,

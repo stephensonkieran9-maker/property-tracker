@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
+import { readCache, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
 
 type History = Record<string, Array<{ month: string; target: number; actual: number | null }>>;
@@ -34,6 +35,10 @@ export default function TargetsPage() {
     setBusy(true);
     try {
       const q = m ? `?month=${m}` : "";
+      const cb = readCache<Board>(`/api/board${q}`);
+      const ch = readCache<{ history: History }>(`/api/targets/history${q}`);
+      if (cb) setData(cb);
+      if (ch) setHist(ch.history ?? {});
       const [b, h] = await Promise.all([
         fetch(`/api/board${q}`, { cache: "no-store" }).then(async (r) => ({ ok: r.ok, j: await r.json() })),
         fetch(`/api/targets/history${q}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({ history: {} })),
@@ -41,6 +46,8 @@ export default function TargetsPage() {
       if (!b.ok) throw new Error(b.j.error || "Failed to load");
       setData(b.j);
       setHist(h.history ?? {});
+      writeCache(`/api/board${q}`, b.j);
+      writeCache(`/api/targets/history${q}`, h);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
