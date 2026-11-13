@@ -310,7 +310,7 @@ function Month({ data, setMonth }: { data: BoardData; setMonth: (m: string | nul
     <section className="kb-card kb-grid" style={{ display: "block" }}>
       <div className="kb-month-head">
         <div>
-          <h3>Bookings &amp; revenue</h3>
+          <h3>Bookings &amp; revenue <a className="kb-link" style={{ marginLeft: 10, fontWeight: 400 }} href={`/finance${m.isCurrent ? "" : `?key=${m.key}`}`}>Finance →</a></h3>
           <p className="kb-sub" style={{ margin: 0 }}>By the date the booking was made · revenue is the booking total</p>
         </div>
         <div className="kb-picker">

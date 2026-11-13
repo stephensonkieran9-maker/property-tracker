@@ -23,6 +23,10 @@ export interface Reservation {
   status: "confirmed" | "cancelled";
   channel?: string;
   checkInTime?: number; // hour, if Hostaway has it
+  /** Channel commission taken by Airbnb / Booking.com etc. (GBP), if Hostaway has it. */
+  commission?: number;
+  cleaningFee?: number;
+  tax?: number;
 }
 
 export interface Conversation {

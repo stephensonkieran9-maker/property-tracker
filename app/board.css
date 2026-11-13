@@ -335,3 +335,41 @@ a.kb-click { text-decoration: none; }
 .kb-row-link { color: inherit; text-decoration: none; border-radius: 8px; }
 .kb-row-link:hover { background: var(--k-card-2); }
 .kb-cardhead .kb-link { margin-left: 0; white-space: nowrap; }
+
+/* ── Finance page ── */
+.kf-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.kf-note { font-size: 11.5px; color: var(--k-faint); margin: 0 0 12px; }
+.kf-strip { display: flex; flex-wrap: wrap; gap: 10px 28px; padding: 12px 18px; margin-bottom: 14px; background: var(--k-panel); border: 1px solid var(--k-line-soft); border-radius: 14px; }
+.kf-strip div { display: flex; flex-direction: column; gap: 2px; }
+.kf-strip b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.kf-strip span { font-size: 11px; color: var(--k-muted); }
+.kf-stack { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 14px; }
+.kf-stack i { display: block; height: 100%; }
+.kf-hbars { display: flex; flex-direction: column; gap: 12px; }
+.kf-hbar-top { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; margin-bottom: 5px; }
+.kf-hbar-top span:last-child { color: var(--k-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kf-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; vertical-align: 0; }
+.kf-track { height: 8px; background: var(--k-line-soft); border-radius: 4px; overflow: hidden; }
+.kf-track i { display: block; height: 100%; border-radius: 0 4px 4px 0; }
+.kf-hbar-sub { font-size: 11px; color: var(--k-faint); margin-top: 4px; }
+.kf-mini-l { font-size: 11px; color: var(--k-muted); margin: 4px 0 2px; }
+.kf-total { font-size: 22px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.kf-total span { display: block; font-size: 11px; font-weight: 400; color: var(--k-muted); }
+.kf-fwd { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-top: 6px; }
+.kf-fwd-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.kf-fwd-v { font-size: 11.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kf-fwd-bar { height: 120px; width: 70%; max-width: 46px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--k-line); }
+.kf-fwd-bar i { display: block; width: 100%; background: #f2c14e; border-radius: 4px 4px 0 0; min-height: 2px; }
+.kf-fwd-m { font-size: 11px; color: var(--k-muted); text-align: center; }
+.kf-fwd-o { font-size: 10.5px; color: var(--k-faint); }
+.kf-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.kf-table th { text-align: left; font-weight: 500; color: var(--k-muted); font-size: 11.5px; padding: 8px 10px; border-bottom: 1px solid var(--k-line); }
+.kf-table th button { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; padding: 0; }
+.kf-table th.r, .kf-table td.r { text-align: right; font-variant-numeric: tabular-nums; }
+.kf-table td { padding: 9px 10px; border-bottom: 1px solid var(--k-line-soft); }
+.kf-table td.name { max-width: 320px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kf-table td.muted { color: var(--k-muted); }
+.kf-table tr:hover td { background: var(--k-card-2); }
+.kf-occ { display: inline-block; width: 50px; height: 5px; background: var(--k-line); border-radius: 3px; overflow: hidden; margin-right: 8px; vertical-align: middle; }
+.kf-occ i { display: block; height: 100%; background: #f2c14e; }
+@media (max-width: 1000px) { .kb-grid[style*="minmax(0,1fr) minmax(0,1fr)"] { grid-template-columns: 1fr !important; } }

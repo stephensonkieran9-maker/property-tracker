@@ -88,7 +88,10 @@ export function mockRawData(): RawData {
         let bookedOn = `${bookedDay} ${hh}:${mm}`;
         if (bookedOn > nowStamp) bookedOn = nowStamp;
         const cancelled = r() < 0.07;
+        const channel = CHANNELS[Math.floor(r() * CHANNELS.length)];
         const seasonal = 1 + 0.25 * Math.sin(((new Date(arrival).getMonth() + 1 - 4) / 12) * 2 * Math.PI);
+        const total = Math.round(nights * g.rate * seasonal * (0.85 + r() * 0.3)) + 55;
+        const commRate: Record<string, number> = { Airbnb: 0.155, "Booking.com": 0.15, Vrbo: 0.08 };
         reservations.push({
           id: rid++,
           listingId: u.id,
@@ -98,10 +101,12 @@ export function mockRawData(): RawData {
           departure,
           bookedOn,
           cancelledOn: cancelled ? addDays(bookedDay, Math.floor(r() * Math.max(1, lead))) : undefined,
-          total: Math.round(nights * g.rate * seasonal * (0.85 + r() * 0.3)),
+          total,
+          commission: Math.round(total * (commRate[channel] ?? 0)),
           status: cancelled ? "cancelled" : "confirmed",
-          channel: CHANNELS[Math.floor(r() * CHANNELS.length)],
+          channel,
           checkInTime: 15 + Math.floor(r() * 3),
+          cleaningFee: 55,
         });
       }
       d = departure;

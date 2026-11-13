@@ -25,6 +25,7 @@ Area pills filter everything except team targets.
 - `/` Overview: the main board. Tiles, problems and targets click through to the pages below.
 - `/inbox` Guest inbox: needs a reply / problems / all, issue-type filters, search, area filter, click a conversation to read the full thread (read-only; reply in Hostaway). Short thank-you messages don't count as needing a reply.
 - `/targets` Team targets by month: each person (Google Sheet) with what's left and per-day pace, plus company targets with charts.
+- `/finance` Finance: month or year, earned (by stay) or sold (by booking date), revenue, after-commission, nightly rate, revenue per available night, occupancy, booking value, cancellations; revenue by month vs last year, by channel, by area, by day, money on the books for the next 6 months, and a sortable property table with CSV download. Set `MANAGEMENT_FEE_PCT` to show an estimated Keapr fee.
 - `/growth` Portfolio growth: properties now, brought on / lost, growth chart, last 12 months, searchable lists.
 
 ## Run locally

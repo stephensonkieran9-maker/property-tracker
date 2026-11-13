@@ -36,7 +36,17 @@ interface HReservation {
   status?: string;
   channelName?: string;
   checkInTime?: number | null;
+  channelCommissionAmount?: number | string | null;
+  hostChannelFee?: number | string | null;
+  cleaningFee?: number | string | null;
+  taxAmount?: number | string | null;
 }
+
+const optNum = (v: unknown): number | undefined => {
+  if (v === null || v === undefined || v === "") return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+};
 
 // Statuses that count as a real, live stay.
 const LIVE = new Set(["new", "modified", "ownerStay"]);
@@ -72,6 +82,9 @@ export async function fetchReservations(from: string, to: string): Promise<Reser
         status: cancelled ? "cancelled" : "confirmed",
         channel: r.channelName,
         checkInTime: r.checkInTime ?? undefined,
+        commission: optNum(r.channelCommissionAmount) ?? optNum(r.hostChannelFee),
+        cleaningFee: optNum(r.cleaningFee),
+        tax: optNum(r.taxAmount),
       });
     }
     if (batch.length < limit) break;
