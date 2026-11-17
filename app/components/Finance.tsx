@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
+import { useSvgWidth } from "@/lib/useSvgWidth";
 import { readCache, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Finance as FinanceData, FinanceTotals } from "@/lib/finance";
@@ -97,11 +98,11 @@ export default function Finance() {
             <Head data={data} set={set} />
             <Kpis t={data.totals} prev={data.previous} data={data} />
             <Trend data={data} onPick={(m) => set({ period: "month", key: m })} />
-            <div className="kb-grid" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+            <div className="kb-grid kb-2col">
               <Channels data={data} />
               <Areas data={data} />
             </div>
-            <div className="kb-grid" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+            <div className="kb-grid kb-2col">
               {data.period === "month" ? <Daily data={data} /> : <RateTrend data={data} />}
               <Forward data={data} />
             </div>
@@ -206,9 +207,10 @@ function Kpis({ t, prev, data }: { t: FinanceTotals; prev: FinanceData["previous
 }
 
 function Trend({ data, onPick }: { data: FinanceData; onPick: (m: string) => void }) {
+  const [svgRef, W] = useSvgWidth(1000);
   const pts = data.monthly;
   const [hover, setHover] = useState<number | null>(null);
-  const W = 1000, H = 250, L = 56, R = 10, T = 14, B = 26;
+  const H = 250, L = 56, R = 10, T = 14, B = 26;
   const max = Math.max(1, ...pts.map((p) => Math.max(p.revenue, p.lastYear ?? 0))) * 1.08;
   const n = pts.length || 1;
   const slot = (W - L - R) / n;
@@ -232,7 +234,7 @@ function Trend({ data, onPick }: { data: FinanceData; onPick: (m: string) => voi
         </div>
       </div>
       <div style={{ position: "relative" }}>
-        <svg className="kb-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ height: 250 }} onMouseLeave={() => setHover(null)}>
+        <svg ref={svgRef} className="kb-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ height: 250 }} onMouseLeave={() => setHover(null)}>
           {[0, 0.25, 0.5, 0.75, 1].map((f) => (
             <g key={f}>
               <line x1={L} x2={W - R} y1={y(f * max)} y2={y(f * max)} stroke="#26262a" vectorEffect="non-scaling-stroke" />
@@ -358,9 +360,10 @@ function Areas({ data }: { data: FinanceData }) {
 }
 
 function Daily({ data }: { data: FinanceData }) {
+  const [svgRef, W] = useSvgWidth(600);
   const pts = data.daily;
   const [hover, setHover] = useState<number | null>(null);
-  const W = 600, H = 190, L = 50, R = 8, T = 10, B = 22;
+  const H = 190, L = 50, R = 8, T = 10, B = 22;
   const days = Number(data.key.slice(5, 7)) ? new Date(Date.UTC(+data.key.slice(0, 4), +data.key.slice(5, 7), 0)).getUTCDate() : 30;
   const max = Math.max(1, ...pts.map((p) => p.revenue)) * 1.1;
   const slot = (W - L - R) / days;
@@ -372,7 +375,7 @@ function Daily({ data }: { data: FinanceData }) {
       <h3>Revenue by day</h3>
       <p className="kb-sub">{data.basis === "stay" ? "Earned each night; faded bars are nights booked but not yet stayed" : "Booked each day"}</p>
       <div style={{ position: "relative" }}>
-        <svg viewBox={`0 0 ${W} ${H}`} className="kt-svg" style={{ height: 190 }} preserveAspectRatio="none" onMouseLeave={() => setHover(null)}>
+        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="kt-svg" style={{ height: 190 }} preserveAspectRatio="none" onMouseLeave={() => setHover(null)}>
           {[0, 0.5, 1].map((f) => (
             <g key={f}>
               <line x1={L} x2={W - R} y1={y(f * max)} y2={y(f * max)} stroke="#26262a" vectorEffect="non-scaling-stroke" />
@@ -396,9 +399,10 @@ function Daily({ data }: { data: FinanceData }) {
 }
 
 function RateTrend({ data }: { data: FinanceData }) {
+  const [svgRef, W] = useSvgWidth(600);
   // Two separate small charts (one scale each) rather than a dual-axis chart.
   const pts = data.monthly;
-  const W = 600, H = 90, L = 50, R = 8, T = 8, B = 18;
+  const H = 90, L = 50, R = 8, T = 8, B = 18;
   const slot = (W - L - R) / Math.max(1, pts.length);
   const x = (i: number) => L + slot * (i + 0.5);
   const maxAdr = Math.max(1, ...pts.map((p) => p.adr)) * 1.1;
@@ -410,7 +414,7 @@ function RateTrend({ data }: { data: FinanceData }) {
       <h3>Nightly rate and occupancy</h3>
       <p className="kb-sub">Month by month across {data.key}</p>
       <div className="kf-mini-l">Average nightly rate</div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="kt-svg" style={{ height: 90 }} preserveAspectRatio="none">
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="kt-svg" style={{ height: 90 }} preserveAspectRatio="none">
         {[0, 1].map((f) => (
           <g key={f}>
             <line x1={L} x2={W - R} y1={yA(f * maxAdr)} y2={yA(f * maxAdr)} stroke="#26262a" vectorEffect="non-scaling-stroke" />
@@ -509,6 +513,7 @@ function Properties({ data }: { data: FinanceData }) {
           <button className="kb-area-btn" onClick={csv}>Download CSV</button>
         </div>
       </div>
+      <div className="kf-table-wrap">
       <table className="kf-table">
         <thead>
           <tr>
@@ -536,6 +541,7 @@ function Properties({ data }: { data: FinanceData }) {
           ))}
         </tbody>
       </table>
+      </div>
       {rows.length > 15 && (
         <button className="kb-more" onClick={() => setAll((v) => !v)}>{all ? "Show fewer" : `Show all ${rows.length} properties`}</button>
       )}

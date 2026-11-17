@@ -158,7 +158,7 @@ export default function Inbox() {
               <input className="kg-search" placeholder="Search guest, property or message…" value={q} onChange={(e) => setQ(e.target.value)} />
             </div>
 
-            <div className="ki-split">
+            <div className={`ki-split${current ? " has-thread" : ""}`}>
               <section className="kb-card ki-list">
                 {items.length === 0 && (
                   <div className="kb-empty">{view === "reply" ? "Nobody is waiting on a reply. Nice." : "No messages match."}</div>

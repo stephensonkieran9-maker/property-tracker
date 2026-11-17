@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Sidebar from "./Sidebar";
+import { useSvgWidth } from "@/lib/useSvgWidth";
 import { readCache, writeCache } from "@/lib/clientCache";
 import type { DashboardData } from "@/lib/types";
 
@@ -152,6 +153,7 @@ function Kpis({ data }: { data: DashboardData }) {
 }
 
 function GrowthChart({ data }: { data: DashboardData }) {
+  const [svgRef, W] = useSvgWidth(1000);
   const pts = data.history;
   const [hover, setHover] = useState<number | null>(null);
   if (pts.length < 2) {
@@ -162,7 +164,7 @@ function GrowthChart({ data }: { data: DashboardData }) {
       </section>
     );
   }
-  const W = 1000, H = 240, L = 40, R = 14, T = 14, B = 26;
+  const H = 240, L = 40, R = 14, T = 14, B = 26;
   const t0 = new Date(pts[0].date).getTime();
   const t1 = Math.max(new Date(pts[pts.length - 1].date).getTime(), t0 + 1);
   const max = Math.max(...pts.map((p) => p.count)) * 1.08 || 1;
@@ -191,7 +193,7 @@ function GrowthChart({ data }: { data: DashboardData }) {
       <h3>Portfolio over time</h3>
       <p className="kb-sub">Total properties since {prettyDate(pts[0].date)}</p>
       <div style={{ position: "relative" }}>
-        <svg
+        <svg ref={svgRef}
           className="kb-chart"
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
@@ -310,7 +312,7 @@ function Feeds({ data, month, setMonth, q, setQ }: {
         </div>
         <input className="kg-search" placeholder="Search properties or areas…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <div className="kb-grid kb-two" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+      <div className="kb-grid kb-2col">
         <section className="kb-card">
           <h3>Brought on <span className="kg-count">{ins.length}</span></h3>
           <p className="kb-sub">Newest first, by the date it was added to Hostaway</p>

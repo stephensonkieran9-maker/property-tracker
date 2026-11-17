@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sidebar from "./Sidebar";
+import { useSvgWidth } from "@/lib/useSvgWidth";
 import { readCache, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
@@ -360,9 +361,10 @@ function Month({ data, setMonth }: { data: BoardData; setMonth: (m: string | nul
 }
 
 function RevenueChart({ data }: { data: BoardData }) {
+  const [svgRef, W] = useSvgWidth(1000);
   const m = data.month;
   const days = new Date(Date.UTC(+m.key.slice(0, 4), +m.key.slice(5, 7), 0)).getUTCDate();
-  const W = 1000, H = 220, L = 52, R = 12, T = 12, B = 26;
+  const H = 220, L = 52, R = 12, T = 12, B = 26;
   const maxCum = Math.max(m.revenueTarget, ...m.daily.map((d) => d.cumulative), 1) * 1.05;
   const maxDay = Math.max(...m.daily.map((d) => d.revenue), 1);
   const x = (i: number) => L + ((i + 0.5) / days) * (W - L - R);
@@ -376,7 +378,7 @@ function RevenueChart({ data }: { data: BoardData }) {
 
   return (
     <div style={{ position: "relative" }}>
-      <svg className="kb-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" onMouseLeave={() => setHover(null)}>
+      <svg ref={svgRef} className="kb-chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" onMouseLeave={() => setHover(null)}>
         <defs>
           <linearGradient id="kbArea" x1="0" x2="0" y1="0" y2="1">
             <stop offset="0" stopColor="#f2c14e" stopOpacity="0.28" />
@@ -445,21 +447,23 @@ function Heatmap({ data }: { data: BoardData }) {
           ? "Each property, night by night: gold is booked, grey is empty. Top row is the area as a whole."
           : `% of properties booked each night. Top row is the whole portfolio; areas below, biggest first. Grey is under the ${target}% target.`}
       </p>
+      <div className="kb-heat-wrap">
       <div className="kb-heat" style={{ gridTemplateColumns: cols }}>
-        <span />
-        {dates.map((d) => {
-          const wd = new Date(d + "T12:00:00Z").getUTCDay();
-          return (
-            <span key={d} className={`kb-heat-d${wd === 5 || wd === 6 ? " we" : ""}`}>
-              {new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" }).slice(0, 2)}
-              <br />
-              {Number(d.slice(8))}
-            </span>
-          );
-        })}
-        {shown.map((r) => (
-          <Row key={r.kind + r.group} row={r} target={target} />
-        ))}
+          <span />
+          {dates.map((d) => {
+            const wd = new Date(d + "T12:00:00Z").getUTCDay();
+            return (
+              <span key={d} className={`kb-heat-d${wd === 5 || wd === 6 ? " we" : ""}`}>
+                {new Date(d + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" }).slice(0, 2)}
+                <br />
+                {Number(d.slice(8))}
+              </span>
+            );
+          })}
+          {shown.map((r) => (
+            <Row key={r.kind + r.group} row={r} target={target} />
+          ))}
+        </div>
       </div>
       {rows.length > ROWS_SHOWN && (
         <button className="kb-more" onClick={() => setAll((v) => !v)}>

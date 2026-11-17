@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
+import { useSvgWidth } from "@/lib/useSvgWidth";
 import { readCache, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
 
@@ -255,14 +256,15 @@ function CompanyCard({ t, data, daysLeft }: { t: TargetProgress; data: Board; da
 }
 
 function CumChart({ values, days, target, money = false }: { values: number[]; days: number; target: number; money?: boolean }) {
-  const W = 600, H = 140, L = 58, R = 8, T = 8, B = 18;
+  const [svgRef, W] = useSvgWidth(600);
+  const H = 140, L = 58, R = 8, T = 8, B = 18;
   const max = Math.max(target, ...values, 1) * 1.05;
   const x = (i: number) => L + ((i + 0.5) / days) * (W - L - R);
   const y = (v: number) => T + (1 - v / max) * (H - T - B);
   const line = values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
   const lab = (v: number) => (money ? short(v) : Math.round(v).toLocaleString("en-GB"));
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="kt-svg" preserveAspectRatio="none">
+    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="kt-svg" preserveAspectRatio="none">
       {[0, 0.5, 1].map((f) => (
         <g key={f}>
           <line x1={L} x2={W - R} y1={y(f * max)} y2={y(f * max)} stroke="#26262a" vectorEffect="non-scaling-stroke" />
@@ -280,13 +282,14 @@ function CumChart({ values, days, target, money = false }: { values: number[]; d
 }
 
 function NightBars({ nightly, target }: { nightly: Board["month"]["nightly"]; target: number }) {
-  const W = 600, H = 140, L = 30, R = 8, T = 8, B = 18;
+  const [svgRef, W] = useSvgWidth(600);
+  const H = 140, L = 30, R = 8, T = 8, B = 18;
   const n = nightly.length;
   const bw = ((W - L - R) / n) * 0.7;
   const x = (i: number) => L + ((i + 0.5) / n) * (W - L - R);
   const y = (v: number) => T + (1 - v / 100) * (H - T - B);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="kt-svg" preserveAspectRatio="none">
+    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="kt-svg" preserveAspectRatio="none">
       {[0, 50, 100].map((v) => (
         <g key={v}>
           <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="#26262a" vectorEffect="non-scaling-stroke" />

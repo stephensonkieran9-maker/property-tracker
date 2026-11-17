@@ -22,11 +22,15 @@ Built on the earlier **property-tracker** (property counts + losses), which now 
 Area pills filter everything except team targets.
 
 ## Pages
+- `/pulse` How we're doing: one phone screen — overall verdict, revenue vs target with pace, occupancy, booked today, replies waiting, arrivals/check-outs, year so far, properties, every target. Opens first when the board is added to a phone's home screen.
 - `/` Overview: the main board. Tiles, problems and targets click through to the pages below.
 - `/inbox` Guest inbox: needs a reply / problems / all, issue-type filters, search, area filter, click a conversation to read the full thread (read-only; reply in Hostaway). Short thank-you messages don't count as needing a reply.
 - `/targets` Team targets by month: each person (Google Sheet) with what's left and per-day pace, plus company targets with charts.
 - `/finance` Finance: month or year, earned (by stay) or sold (by booking date), revenue, after-commission, nightly rate, revenue per available night, occupancy, booking value, cancellations; revenue by month vs last year, by channel, by area, by day, money on the books for the next 6 months, and a sortable property table with CSV download. Set `MANAGEMENT_FEE_PCT` to show an estimated Keapr fee.
 - `/growth` Portfolio growth: properties now, brought on / lost, growth chart, last 12 months, searchable lists.
+
+## Phones
+Every page is built for a phone: the side menu becomes a bottom tab bar, tiles go two across, wide grids and tables scroll sideways with names pinned, a conversation opens full screen, and charts draw at the screen's real width. Add to Home Screen (Safari share menu / Chrome menu) installs it as "Keapr", opening on Pulse.
 
 ## Speed: how data is cached
 - `lib/snapshot.ts` keeps one shared snapshot of Hostaway data (listings, ~26 months of bookings, recent guest messages, losses) in memory and in a **private** Vercel Blob file (`keapr-board/cache/snapshot.json`).
