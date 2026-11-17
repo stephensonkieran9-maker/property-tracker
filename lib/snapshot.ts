@@ -46,7 +46,8 @@ export const status = {
   lastReadMs: null as number | null,
 };
 
-const blobOn = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+// Older projects get a read-write token; newer Vercel connections give a store id (OIDC auth).
+const blobOn = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 
 function key(): Buffer {
   const secret = process.env.SNAPSHOT_SECRET || process.env.HOSTAWAY_API_KEY || "";

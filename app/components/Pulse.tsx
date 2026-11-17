@@ -99,6 +99,7 @@ function Content({ d, busy, error, onRefresh }: { d: Board; busy: boolean; error
         </div>
       )}
 
+      <div className="kp-row">
       {rev && (
         <a className="kp-hero" href="/finance">
           <span className="kp-label">Revenue booked in {m.label.split(" ")[0]}</span>
@@ -158,6 +159,9 @@ function Content({ d, busy, error, onRefresh }: { d: Board; busy: boolean; error
         </a>
       </div>
 
+      </div>
+
+      <div className="kp-row kp-row-2">
       <section className="kp-card">
         <div className="kp-card-h">
           <h3>People</h3>
@@ -178,6 +182,7 @@ function Content({ d, busy, error, onRefresh }: { d: Board; busy: boolean; error
           <Line key={t.label} label={t.label} actual={t.actual} target={t.target} format={t.format} pace={t.pace} status={t.status} lower={t.lowerIsBetter} />
         ))}
       </section>
+      </div>
     </div>
   );
 }

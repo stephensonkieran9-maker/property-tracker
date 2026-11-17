@@ -377,6 +377,21 @@ a.kb-click { text-decoration: none; }
 
 /* ── Pulse ("How we're doing") ── */
 .kp { max-width: 640px; }
+/* Desktop: use the width — hero beside a 3-across tile grid, people beside company. */
+@media (min-width: 1000px) {
+  .kp { max-width: 1320px; }
+  .kp .kp-row { display: grid; grid-template-columns: minmax(340px, 1fr) minmax(0, 2fr); gap: 14px; margin-bottom: 14px; align-items: stretch; }
+  .kp .kp-row-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+  .kp .kp-row > * { margin-bottom: 0; }
+  .kp .kp-hero { justify-content: center; padding: 22px 24px; }
+  .kp .kp-big { font-size: 64px; }
+  .kp .kp-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .kp .kp-tile { padding: 16px 18px; justify-content: center; }
+  .kp .kp-num { font-size: 28px; }
+  .kp .kp-verdict { flex-direction: row; align-items: baseline; justify-content: space-between; padding: 14px 20px; margin-bottom: 14px; }
+  .kp .kp-card { padding: 18px 20px; }
+  .kp .kp-tile:hover, .kp .kp-hero:hover { border-color: #3a3a40; }
+}
 .kp-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .kp-refresh { width: 40px; height: 40px; flex: none; border-radius: 12px; border: 1px solid var(--k-line); background: var(--k-panel); color: var(--k-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .kp-meta { display: flex; gap: 10px; align-items: center; color: var(--k-faint); font-size: 11.5px; margin: 8px 0 16px; }

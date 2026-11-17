@@ -14,7 +14,7 @@ const EMPTY: TrackState = { roster: [], losses: [], trackingSince: null };
 const BLOB_PATH = "property-tracker/state.json";
 
 function blobConfigured(): boolean {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
 // ── Vercel Blob backend ──────────────────────────────────────
