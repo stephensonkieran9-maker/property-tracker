@@ -54,3 +54,13 @@ export function warmOtherPages(): void {
   if (idle) idle(() => void run());
   else setTimeout(() => void run(), 1500);
 }
+
+// True once the app has started in this tab. Pages opened after that (by switching tabs)
+// can show their saved numbers on the very first frame instead of a loading screen.
+let hydrated = false;
+export function markHydrated(): void {
+  hydrated = true;
+}
+export function cachedOnSwitch<T>(url: string): T | null {
+  return hydrated ? readCache<T>(url) : null;
+}

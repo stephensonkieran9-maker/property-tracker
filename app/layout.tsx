@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
+// Fonts are bundled with the site (no wait on Google, no text jumping when they arrive).
+import "@fontsource/inter/400.css";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+import "@fontsource/instrument-serif/400.css";
+import "@fontsource/instrument-serif/400-italic.css";
 import "./globals.css";
 import "./board.css";
+import Sidebar from "./components/Sidebar";
 
 export const metadata: Metadata = {
   title: "Keapr · Board",
@@ -19,15 +26,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
-        />
-      </head>
-      <body>{children}</body>
+      <body>
+        <div className="kb">
+          <Sidebar />
+          {children}
+        </div>
+      </body>
     </html>
   );
 }

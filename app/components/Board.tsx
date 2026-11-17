@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Sidebar from "./Sidebar";
 import { useSvgWidth } from "@/lib/useSvgWidth";
-import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
+import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
@@ -67,7 +66,7 @@ const I = {
 
 // ── Main ────────────────────────────────────────────────────
 export default function Board() {
-  const [data, setData] = useState<BoardData | null>(null);
+  const [data, setData] = useState<BoardData | null>(() => cachedOnSwitch<BoardData>("/api/board?"));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [month, setMonth] = useState<string | null>(null);
@@ -107,8 +106,7 @@ export default function Board() {
   }, [load, month, group]);
 
   return (
-    <div className="kb">
-      <Sidebar active="overview" />
+    <>
 
       <main className="kb-main">
         {!data && !error && <div className="kb-loading">Loading the board…</div>}
@@ -130,7 +128,7 @@ export default function Board() {
           </div>
         )}
       </main>
-    </div>
+    </>
   );
 }
 

@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Sidebar from "./Sidebar";
-import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
+import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Inbox as InboxData, InboxItem, ThreadMessage } from "@/lib/inbox";
 
@@ -35,7 +34,7 @@ export default function Inbox() {
   const view = (["reply", "problems", "all"].includes(params.get("view") ?? "") ? params.get("view") : "reply") as View;
   const selected = params.get("c") ? Number(params.get("c")) : null;
 
-  const [data, setData] = useState<InboxData | null>(null);
+  const [data, setData] = useState<InboxData | null>(() => cachedOnSwitch<InboxData>("/api/inbox"));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [group, setGroup] = useState("All");
@@ -92,8 +91,7 @@ export default function Inbox() {
   const current = data?.items.find((i) => i.id === selected) ?? null;
 
   return (
-    <div className="kb">
-      <Sidebar active="inbox" />
+    <>
       <main className="kb-main">
         {!data && !error && <div className="kb-loading">Loading the inbox…</div>}
         {error && !data && <div className="kb-error">Couldn&apos;t load the inbox: {error}</div>}
@@ -173,7 +171,7 @@ export default function Inbox() {
           </div>
         )}
       </main>
-    </div>
+    </>
   );
 }
 

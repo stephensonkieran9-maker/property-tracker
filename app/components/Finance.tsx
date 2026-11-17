@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Sidebar from "./Sidebar";
 import { useSvgWidth } from "@/lib/useSvgWidth";
-import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
+import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Finance as FinanceData, FinanceTotals } from "@/lib/finance";
 
@@ -46,7 +45,12 @@ export default function Finance() {
   const key = params.get("key");
   const group = params.get("group") ?? "All";
 
-  const [data, setData] = useState<FinanceData | null>(null);
+  const [data, setData] = useState<FinanceData | null>(() => {
+    const q = new URLSearchParams({ period, basis });
+    if (key) q.set("key", key);
+    if (group !== "All") q.set("group", group);
+    return cachedOnSwitch<FinanceData>(`/api/finance?${q}`);
+  });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -89,8 +93,7 @@ export default function Finance() {
   }, [period, basis, key, group]);
 
   return (
-    <div className="kb">
-      <Sidebar active="finance" />
+    <>
       <main className="kb-main">
         {!data && !error && <div className="kb-loading">Loading the numbers…</div>}
         {error && !data && <div className="kb-error">Couldn&apos;t load finance: {error}</div>}
@@ -111,7 +114,7 @@ export default function Finance() {
           </div>
         )}
       </main>
-    </div>
+    </>
   );
 }
 

@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Sidebar from "./Sidebar";
 import { useSvgWidth } from "@/lib/useSvgWidth";
-import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
+import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
 
 type History = Record<string, Array<{ month: string; target: number; actual: number | null }>>;
@@ -27,8 +26,8 @@ export default function TargetsPage() {
   const router = useRouter();
   const params = useSearchParams();
   const month = params.get("month");
-  const [data, setData] = useState<Board | null>(null);
-  const [hist, setHist] = useState<History>({});
+  const [data, setData] = useState<Board | null>(() => cachedOnSwitch<Board>("/api/board"));
+  const [hist, setHist] = useState<History>(() => cachedOnSwitch<{ history: History }>("/api/targets/history")?.history ?? {});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -65,14 +64,13 @@ export default function TargetsPage() {
   const go = (m: string | null) => router.replace(m ? `/targets?month=${m}` : "/targets", { scroll: false });
 
   return (
-    <div className="kb">
-      <Sidebar active="targets" />
+    <>
       <main className="kb-main">
         {!data && !error && <div className="kb-loading">Loading targets…</div>}
         {error && !data && <div className="kb-error">Couldn&apos;t load targets: {error}</div>}
         {data && <Content data={data} hist={hist} busy={busy} go={go} />}
       </main>
-    </div>
+    </>
   );
 }
 

@@ -2,8 +2,7 @@
 
 // "How we're doing": one phone screen with the numbers that matter today.
 import { useCallback, useEffect, useState } from "react";
-import Sidebar from "./Sidebar";
-import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
+import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
 
 const gbp = (n: number) => "£" + Math.round(n).toLocaleString("en-GB");
@@ -12,7 +11,7 @@ const fmt = (n: number, f: TargetProgress["format"]) => (f === "gbp" ? short(n) 
 const STATUS: Record<string, string> = { ahead: "Ahead", "on-track": "On track", behind: "Behind", pending: "No data" };
 
 export default function Pulse() {
-  const [data, setData] = useState<Board | null>(null);
+  const [data, setData] = useState<Board | null>(() => cachedOnSwitch<Board>("/api/board?"));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -49,14 +48,13 @@ export default function Pulse() {
   }, [load]);
 
   return (
-    <div className="kb">
-      <Sidebar active="pulse" />
+    <>
       <main className="kb-main kp-main">
         {!data && !error && <div className="kb-loading">Loading…</div>}
         {error && !data && <div className="kb-error">Couldn&apos;t load: {error}</div>}
         {data && <Content d={data} busy={busy} error={error} onRefresh={load} />}
       </main>
-    </div>
+    </>
   );
 }
 

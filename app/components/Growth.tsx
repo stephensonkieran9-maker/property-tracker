@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Sidebar from "./Sidebar";
 import { useSvgWidth } from "@/lib/useSvgWidth";
-import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
+import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { DashboardData } from "@/lib/types";
 
 const MONTHS_SHOWN = 12;
@@ -38,7 +37,7 @@ function lastMonths(n: number, today: string): string[] {
 const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0");
 
 export default function Growth() {
-  const [data, setData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState<DashboardData | null>(() => cachedOnSwitch<DashboardData>("/api/data"));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [month, setMonth] = useState<string | null>(null);
@@ -68,8 +67,7 @@ export default function Growth() {
   }, [load]);
 
   return (
-    <div className="kb">
-      <Sidebar active="growth" />
+    <>
       <main className="kb-main">
         {!data && !error && <div className="kb-loading">Loading the portfolio…</div>}
         {error && !data && <div className="kb-error">Couldn&apos;t load the portfolio: {error}</div>}
@@ -83,7 +81,7 @@ export default function Growth() {
           </div>
         )}
       </main>
-    </div>
+    </>
   );
 }
 
