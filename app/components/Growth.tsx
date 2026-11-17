@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Sidebar from "./Sidebar";
 import { useSvgWidth } from "@/lib/useSvgWidth";
-import { readCache, writeCache } from "@/lib/clientCache";
+import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { DashboardData } from "@/lib/types";
 
 const MONTHS_SHOWN = 12;
@@ -54,6 +54,7 @@ export default function Growth() {
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
       writeCache("/api/data", json);
+      warmOtherPages();
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");

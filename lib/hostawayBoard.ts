@@ -146,7 +146,10 @@ interface HMessage {
  * Recent guest conversations. For the ones where the guest spoke last (or
  * recently), we also pull the latest guest message so problems can be spotted.
  */
-export async function fetchConversations(sinceStamp: string): Promise<Conversation[]> {
+export async function fetchConversations(
+  sinceStamp: string,
+  known: Map<number, Conversation> = new Map()
+): Promise<Conversation[]> {
   const json = await get<{ result?: HConversation[] }>(
     `/conversations?limit=100&offset=0&includeResources=1`
   );
@@ -158,14 +161,21 @@ export async function fetchConversations(sinceStamp: string): Promise<Conversati
   const WITH_TEXT = 60;
   const results: Conversation[] = [];
   for (let i = 0; i < convs.length; i += 10) {
-    const batch = await Promise.all(convs.slice(i, i + 10).map((c, j) => toConversation(c, i + j < WITH_TEXT)));
+    const batch = await Promise.all(
+      convs.slice(i, i + 10).map((c, j) => {
+        // Same latest guest message as last time: reuse its text instead of fetching the thread again.
+        const prev = known.get(c.id);
+        const reuse = prev && prev.lastMessage && prev.lastIncomingAt === stamp(c.messageReceivedOn) ? prev.lastMessage : null;
+        return toConversation(c, reuse === null && i + j < WITH_TEXT, reuse ?? "");
+      })
+    );
     results.push(...batch);
   }
   return results;
 }
 
-async function toConversation(c: HConversation, withText: boolean): Promise<Conversation> {
-      let lastMessage = "";
+async function toConversation(c: HConversation, withText: boolean, knownText = ""): Promise<Conversation> {
+      let lastMessage = knownText;
       if (withText) try {
         const m = await get<{ result?: HMessage[] }>(`/conversations/${c.id}/messages?limit=10`);
         const incoming = (m.result ?? [])

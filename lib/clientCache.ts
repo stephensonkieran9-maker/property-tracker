@@ -24,3 +24,33 @@ export function writeCache(url: string, data: unknown): void {
     } catch {}
   }
 }
+
+/** The default data URL of every page, exactly as each page requests it. */
+export const PAGE_URLS = [
+  "/api/board?", // Pulse, Overview
+  "/api/board", // Targets
+  "/api/targets/history",
+  "/api/inbox",
+  "/api/finance?period=month&basis=stay",
+  "/api/data", // Growth
+];
+
+let warmed = false;
+/** After the first page loads, quietly fetch every other page's data so switching tabs is instant. */
+export function warmOtherPages(): void {
+  if (warmed || typeof window === "undefined") return;
+  warmed = true;
+  const run = async () => {
+    for (const url of PAGE_URLS) {
+      try {
+        const res = await fetch(url);
+        if (res.ok) writeCache(url, await res.json());
+      } catch {
+        /* best-effort */
+      }
+    }
+  };
+  const idle = (window as unknown as { requestIdleCallback?: (cb: () => void) => void }).requestIdleCallback;
+  if (idle) idle(() => void run());
+  else setTimeout(() => void run(), 1500);
+}

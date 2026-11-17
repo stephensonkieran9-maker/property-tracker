@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
 import { useSvgWidth } from "@/lib/useSvgWidth";
-import { readCache, writeCache } from "@/lib/clientCache";
+import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
 
 type History = Record<string, Array<{ month: string; target: number; actual: number | null }>>;
@@ -49,6 +49,7 @@ export default function TargetsPage() {
       setHist(h.history ?? {});
       writeCache(`/api/board${q}`, b.j);
       writeCache(`/api/targets/history${q}`, h);
+      warmOtherPages();
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");

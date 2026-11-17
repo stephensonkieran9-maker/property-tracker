@@ -3,7 +3,7 @@
 // "How we're doing": one phone screen with the numbers that matter today.
 import { useCallback, useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
-import { readCache, writeCache } from "@/lib/clientCache";
+import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
 
 const gbp = (n: number) => "£" + Math.round(n).toLocaleString("en-GB");
@@ -27,6 +27,7 @@ export default function Pulse() {
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
       writeCache(url, json);
+      warmOtherPages();
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");

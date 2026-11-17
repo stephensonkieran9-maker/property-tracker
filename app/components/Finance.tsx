@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
 import { useSvgWidth } from "@/lib/useSvgWidth";
-import { readCache, writeCache } from "@/lib/clientCache";
+import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Finance as FinanceData, FinanceTotals } from "@/lib/finance";
 
@@ -78,6 +78,7 @@ export default function Finance() {
         if (!ok) throw new Error(j.error || "Failed to load");
         setData(j);
         writeCache(url, j);
+        warmOtherPages();
         setError(null);
       })
       .catch((e) => live && setError(e instanceof Error ? e.message : "Failed to load"))

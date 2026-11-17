@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "./Sidebar";
-import { readCache, writeCache } from "@/lib/clientCache";
+import { readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
 import type { Inbox as InboxData, InboxItem, ThreadMessage } from "@/lib/inbox";
 
@@ -63,6 +63,7 @@ export default function Inbox() {
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
       writeCache(url, json);
+      warmOtherPages();
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load");
