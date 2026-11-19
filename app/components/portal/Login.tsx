@@ -34,7 +34,7 @@ export default function Login() {
       <main className="pt-main pt-login">
         <form className="kb-card pt-form" onSubmit={submit}>
           <h1 className="kb-hello">Sign <em>in</em></h1>
-          <p className="kb-sub">Use the same email and password as Keapr Training.</p>
+          <p className="kb-sub">Keapr team sign-in. Use the same email and password as Keapr Training.</p>
           <label className="pt-field wide"><span>Email</span><input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></label>
           <label className="pt-field wide"><span>Password</span><input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required /></label>
           {error && <div className="pt-error" role="alert">{error}</div>}

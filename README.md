@@ -45,7 +45,7 @@ Every page is built for a phone: the side menu becomes a bottom tab bar, tiles g
 - `/admin` (Offers in the menu): admins see all offers with filters, edit / delete, CSV download, staff (add, Staff/Admin toggle, monthly target, set password, remove access) and the leaderboard.
 - Leaderboard ranks by booking value won (nights × nightly rate).
 - Setup: run `supabase/portal_offers.sql` once in the Supabase SQL Editor. Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`, default `claude-haiku-5-5`).
-- Code: `lib/portal/*`, `app/api/portal/*`, `app/components/portal/*`, `middleware.ts` (only portal routes are behind a login; the board pages are unchanged).
+- Code: `lib/portal/*`, `app/api/portal/*`, `app/components/portal/*`, `middleware.ts` (the whole site is behind the login: admins see the board and /admin, staff only /portal; signed-out visitors only see /login; /api/snapshot stays open for the cron).
 
 ## Run locally
 ```bash

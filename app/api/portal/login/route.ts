@@ -28,5 +28,5 @@ export async function POST(req: Request) {
     await supabase.auth.signOut();
     return NextResponse.json({ error: "Your account doesn't have access to the offers portal. Ask an admin to add you." }, { status: 403 });
   }
-  return NextResponse.json({ ok: true, home: access.me.role === "admin" ? "/admin" : "/portal" });
+  return NextResponse.json({ ok: true, home: access.me.role === "admin" ? "/" : "/portal" });
 }
