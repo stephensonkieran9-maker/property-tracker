@@ -39,6 +39,14 @@ Every page is built for a phone: the side menu becomes a bottom tab bar, tiles g
 - The browser keeps the last response per page (`lib/clientCache.ts`), so repeat visits show numbers immediately and swap in fresh ones.
 - The daily cron (`/api/snapshot`) forces a full refresh and records lost properties.
 
+## Offers portal (bookings team)
+- `/login`: sign in with the same email and password as Keapr Training (shared Supabase project).
+- `/portal`: staff upload an offer screenshot (read by Claude, checked by the person, image not kept), choose Managed / Arbitraged, mark Pending / Won / Lost, see their offers by month, the leaderboard, and the countdown: *at your win rate, X more offers to hit your monthly target* (value per offer = booking value won ÷ offers won or lost; this month if 5+ outcomes, else all-time, else team).
+- `/admin` (Offers in the menu): admins see all offers with filters, edit / delete, CSV download, staff (add, Staff/Admin toggle, monthly target, set password, remove access) and the leaderboard.
+- Leaderboard ranks by booking value won (nights × nightly rate).
+- Setup: run `supabase/portal_offers.sql` once in the Supabase SQL Editor. Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY` (optional `ANTHROPIC_MODEL`, default `claude-haiku-5-5`).
+- Code: `lib/portal/*`, `app/api/portal/*`, `app/components/portal/*`, `middleware.ts` (only portal routes are behind a login; the board pages are unchanged).
+
 ## Run locally
 ```bash
 npm install

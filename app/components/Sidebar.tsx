@@ -27,7 +27,7 @@ const ITEMS = [
 ];
 
 // The staff portal and sign-in page have their own header and no board menu.
-const NO_MENU = ["/portal", "/login", "/zz-preview"];
+const NO_MENU = ["/portal", "/login"];
 
 export default function Sidebar() {
   const path = usePathname();
