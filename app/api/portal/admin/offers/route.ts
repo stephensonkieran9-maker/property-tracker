@@ -54,7 +54,7 @@ export async function GET(req: Request) {
         ["location", "Requested location"], ["check_in", "Check in"], ["check_out", "Check out"], ["nights", "Nights"],
         ["adults", "Adults"], ["children", "Children"], ["nightly_rate", "Nightly rate (£)"], ["booking_value", "Booking value (£)"],
         ["commission_pct", "Platform commission %"], ["commission_value", "Platform commission (£)"], ["net", "Net to Keapr (£)"], ["credit_terms_days", "Credit terms (days)"],
-        ["company_contact", "Company contact"], ["model", "Model"], ["hostaway_listing_id", "Hostaway listing ID"], ["outcome", "Outcome"], ["notes", "Notes"],
+        ["platform", "Platform"], ["company_contact", "Company contact"], ["model", "Model"], ["hostaway_listing_id", "Hostaway listing ID"], ["outcome", "Outcome"], ["notes", "Notes"],
       ]);
       return new NextResponse(body, {
         headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="keapr-offers-${month}.csv"` },

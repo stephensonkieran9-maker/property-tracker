@@ -121,6 +121,7 @@ export function OfferCard({ o, showPerson, busy, onOutcome, onEdit, onDelete }: 
         {o.check_in ? `${ukDate(o.check_in)} → ${ukDate(o.check_out)} · ` : ""}{o.nights} nights × {gbp(o.nightly_rate)}
         {o.commission_pct !== null ? ` · ${o.commission_pct}% platform` : ""}
         {o.location ? ` · for ${o.location}` : ""}
+        {o.platform ? ` · via ${o.platform}` : ""}
       </div>
       <div className="pt-offer-foot">
         <OutcomeToggle value={o.outcome} onChange={onOutcome} disabled={busy} />

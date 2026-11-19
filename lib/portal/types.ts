@@ -27,6 +27,8 @@ export interface OfferFields {
   commission_pct: number | null;
   credit_terms_days: number | null;
   company_contact: string | null;
+  /** Booking platform the offer went through, if shown. */
+  platform: string | null;
   /** Hostaway property, for managed offers. */
   hostaway_listing_id?: number | null;
 }

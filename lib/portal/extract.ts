@@ -28,6 +28,7 @@ const TOOL = {
       commission_pct: { ...num, description: "The booking platform's commission percentage, number only (15% → 15)" },
       credit_terms_days: { ...num, description: "Credit terms in days" },
       company_contact: str,
+      platform: { ...str, description: "The booking platform or agency the offer was sent through, only if the screenshot names it (e.g. in a header, logo or 'via ...'). Not the supplier. Null if not shown." },
     },
     required: ["property_name"],
   },
@@ -112,5 +113,6 @@ function clean(i: Record<string, unknown>): OfferFields {
     commission_pct: n(i.commission_pct),
     credit_terms_days: n(i.credit_terms_days),
     company_contact: s(i.company_contact),
+    platform: s(i.platform),
   };
 }

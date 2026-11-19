@@ -9,7 +9,7 @@ export type FormValues = Record<Exclude<keyof OfferFields, "hostaway_listing_id"
 
 const KEYS: Array<keyof FormValues> = [
   "property_name", "address", "apartment_type", "location", "check_in", "check_out", "nights", "adults", "children",
-  "nightly_rate", "commission_pct", "credit_terms_days", "company_contact", "hostaway_listing_id", "model", "notes",
+  "nightly_rate", "commission_pct", "credit_terms_days", "company_contact", "platform", "hostaway_listing_id", "model", "notes",
 ];
 
 export function toValues(o: Partial<Offer> | Partial<OfferFields> | null): FormValues {
@@ -133,7 +133,8 @@ export default function OfferForm({
         {field("credit_terms_days", "Credit terms (days)", { type: "number", inputMode: "numeric" })}
         {field("adults", "Adults", { type: "number", inputMode: "numeric" })}
         {field("children", "Children", { type: "number", inputMode: "numeric" })}
-        {field("company_contact", "Company contact", { wide: true })}
+        {field("platform", "Platform")}
+        {field("company_contact", "Company contact")}
         <label className="pt-field wide">
           <span>Notes</span>
           <textarea rows={2} value={v.notes} onChange={set("notes")} />

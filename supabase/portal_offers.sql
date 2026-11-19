@@ -46,6 +46,8 @@ create table if not exists public.offers (
 
 -- Managed offers link to the Hostaway property (added 19 Nov 2026).
 alter table public.offers add column if not exists hostaway_listing_id bigint;
+-- Booking platform the offer went through, if the screenshot shows it (added 19 Nov 2026).
+alter table public.offers add column if not exists platform text;
 
 create index if not exists offers_sent_at_idx on public.offers (sent_at desc);
 create index if not exists offers_user_sent_idx on public.offers (user_id, sent_at desc);

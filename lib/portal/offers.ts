@@ -4,7 +4,7 @@ import type { Model, Outcome } from "./types";
 // Validates offer input from the portal before it touches the database.
 
 export const OFFER_COLUMNS =
-  "id, user_id, property_name, address, apartment_type, location, check_in, check_out, nights, adults, children, nightly_rate, commission_pct, credit_terms_days, company_contact, hostaway_listing_id, booking_value, commission_value, model, outcome, outcome_at, notes, sent_at";
+  "id, user_id, property_name, address, apartment_type, location, check_in, check_out, nights, adults, children, nightly_rate, commission_pct, credit_terms_days, company_contact, platform, hostaway_listing_id, booking_value, commission_value, model, outcome, outcome_at, notes, sent_at";
 
 const MODELS: Model[] = ["managed", "arbitraged"];
 const OUTCOMES: Outcome[] = ["pending", "won", "lost"];
@@ -32,7 +32,7 @@ export function parseOffer(body: Record<string, unknown>, partial: boolean): { r
     if (!v) return { error: "Add the property name." };
     row.property_name = v;
   }
-  for (const k of ["address", "apartment_type", "location", "company_contact"]) if (!partial || has(k)) row[k] = text(body[k]);
+  for (const k of ["address", "apartment_type", "location", "company_contact", "platform"]) if (!partial || has(k)) row[k] = text(body[k]);
   if (!partial || has("notes")) row.notes = text(body.notes, 1000);
 
   for (const k of ["check_in", "check_out"]) {
