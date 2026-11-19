@@ -12,6 +12,7 @@ const I = {
   inbox: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 13l2-8h12l2 8v6H4z"/><path d="M4 13h5l1 2h4l1-2h5"/></svg>,
   target: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="0.5"/></svg>,
   finance: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>,
+  offers: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/></svg>,
   growth: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>,
 };
 
@@ -22,7 +23,11 @@ const ITEMS = [
   { href: "/targets", label: "Targets", icon: I.target },
   { href: "/finance", label: "Finance", icon: I.finance },
   { href: "/growth", label: "Growth", icon: I.growth },
+  { href: "/admin", label: "Offers", icon: I.offers },
 ];
+
+// The staff portal and sign-in page have their own header and no board menu.
+const NO_MENU = ["/portal", "/login", "/zz-preview"];
 
 export default function Sidebar() {
   const path = usePathname();
@@ -30,7 +35,7 @@ export default function Sidebar() {
 
   useEffect(() => {
     markHydrated();
-    ITEMS.forEach((it) => router.prefetch(it.href));
+    ITEMS.filter((it) => it.href !== "/admin").forEach((it) => router.prefetch(it.href));
     // Same-site links switch pages in place (no full reload, menu stays put).
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -44,6 +49,8 @@ export default function Sidebar() {
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
   }, [router]);
+
+  if (NO_MENU.some((p) => path === p || path.startsWith(p + "/"))) return null;
 
   return (
     <aside className="kb-side">
