@@ -26,6 +26,7 @@ export function toPayload(v: FormValues) {
     credit_terms_days: v.credit_terms_days === "" ? null : Number(v.credit_terms_days),
     adults: v.adults === "" ? null : Number(v.adults),
     children: v.children === "" ? null : Number(v.children),
+    hostaway_listing_id: v.model === "managed" && v.hostaway_listing_id ? Number(v.hostaway_listing_id) : null,
   };
 }
 

@@ -29,7 +29,8 @@ create table if not exists public.offers (
   adults            integer check (adults >= 0),
   children          integer check (children >= 0),
   nightly_rate      numeric(10, 2) not null check (nightly_rate >= 0),
-  commission_pct    numeric(5, 2) check (commission_pct >= 0 and commission_pct <= 100),
+  commission_pct    numeric(5, 2) -- the booking platform's commission, deducted from what Keapr receives
+                     check (commission_pct >= 0 and commission_pct <= 100),
   credit_terms_days integer check (credit_terms_days >= 0),
   company_contact   text,
   booking_value     numeric(12, 2) generated always as (round(nightly_rate * nights, 2)) stored,
@@ -42,6 +43,9 @@ create table if not exists public.offers (
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
+
+-- Managed offers link to the Hostaway property (added 19 Nov 2026).
+alter table public.offers add column if not exists hostaway_listing_id bigint;
 
 create index if not exists offers_sent_at_idx on public.offers (sent_at desc);
 create index if not exists offers_user_sent_idx on public.offers (user_id, sent_at desc);

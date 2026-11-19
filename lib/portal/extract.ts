@@ -25,7 +25,7 @@ const TOOL = {
       adults: num,
       children: num,
       nightly_rate: { ...num, description: "Supplier rate per night in GBP, number only. If only a total is shown, divide by nights." },
-      commission_pct: { ...num, description: "Commission percentage, number only (15% → 15)" },
+      commission_pct: { ...num, description: "The booking platform's commission percentage, number only (15% → 15)" },
       credit_terms_days: { ...num, description: "Credit terms in days" },
       company_contact: str,
     },

@@ -166,7 +166,7 @@ function Offers() {
           <div className="kb-kpi"><span className="kb-kpi-l">Won</span><span className="kb-kpi-v">{s.won}</span><span className="kb-kpi-s">{s.lost} lost</span></div>
           <div className="kb-kpi"><span className="kb-kpi-l">Win rate</span><span className="kb-kpi-v">{pct(s.won + s.lost ? s.won / (s.won + s.lost) : null)}</span><span className="kb-kpi-s">{s.won ? `1 in ${Math.round((s.sent / s.won) * 10) / 10} accepted` : "won ÷ decided"}</span></div>
           <div className="kb-kpi"><span className="kb-kpi-l">Booking value won</span><span className="kb-kpi-v">{gbp(s.wonValue)}</span><span className="kb-kpi-s">of {gbp(s.sentValue)} offered</span></div>
-          <div className="kb-kpi"><span className="kb-kpi-l">Commission won</span><span className="kb-kpi-v">{gbp(s.wonCommission)}</span><span className="kb-kpi-s">{f.user ? "this person" : "whole team"}, {monthName(f.month)}</span></div>
+          <div className="kb-kpi"><span className="kb-kpi-l">Net won (after platform commission)</span><span className="kb-kpi-v">{gbp(s.wonValue - s.wonCommission)}</span><span className="kb-kpi-s">{f.user ? "this person" : "whole team"}, {monthName(f.month)}</span></div>
         </div>
       )}
 

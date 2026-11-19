@@ -35,7 +35,7 @@ export function Leaderboard({ rows, meId, period, onPeriod }: {
               </div>
               <div className="kb-bar"><i style={{ width: `${(r.wonValue / top) * 100}%` }} /></div>
               <div className="pt-lb-sub">
-                {r.won} won of {r.sent} sent · win rate {pct(r.winRate)} · {gbp(r.wonCommission)} commission
+                {r.won} won of {r.sent} sent · win rate {pct(r.winRate)} · {gbp(r.wonValue - r.wonCommission)} net
               </div>
             </div>
           </li>
@@ -114,12 +114,12 @@ export function OfferCard({ o, showPerson, busy, onOutcome, onEdit, onDelete }: 
         </div>
         <div className="pt-offer-val">
           <b>{gbp(o.booking_value)}</b>
-          <span>{gbp(o.commission_value)} comm.</span>
+          <span>{gbp(o.booking_value - o.commission_value)} net</span>
         </div>
       </div>
       <div className="pt-offer-meta">
         {o.check_in ? `${ukDate(o.check_in)} → ${ukDate(o.check_out)} · ` : ""}{o.nights} nights × {gbp(o.nightly_rate)}
-        {o.commission_pct !== null ? ` · ${o.commission_pct}%` : ""}
+        {o.commission_pct !== null ? ` · ${o.commission_pct}% platform` : ""}
         {o.location ? ` · for ${o.location}` : ""}
       </div>
       <div className="pt-offer-foot">

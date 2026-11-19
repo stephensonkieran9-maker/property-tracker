@@ -73,7 +73,12 @@
 .pt-role { padding: 3px; flex: none; }
 .pt-role button { padding: 6px 12px; font-size: 12px; }
 .pt-role button:disabled { cursor: default; }
-.pt-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pt-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pt-totals .minus { background: var(--k-panel); }
+.pt-totals .minus b { color: var(--k-muted); }
+.pt-totals .net { background: var(--k-green-soft); }
+.pt-totals .net b { color: var(--k-green); }
+@media (max-width: 520px) { .pt-totals { grid-template-columns: 1fr 1fr; } .pt-totals .net { grid-column: 1 / -1; } }
 .pt-totals div { background: var(--k-gold-soft); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
 .pt-totals span { font-size: 11px; color: var(--k-muted); }
 .pt-totals b { font-size: 20px; font-variant-numeric: tabular-nums; color: var(--k-gold); }
@@ -166,3 +171,16 @@
   .pt-count { font-size: 46px; }
   .pt-outcome button { padding: 7px 11px; }
 }
+
+/* Hostaway property picker (managed offers) */
+.pt-picker { display: flex; flex-direction: column; gap: 6px; }
+.pt-picker input { width: 100%; background: var(--k-panel); border: 1px solid var(--k-line); color: var(--k-text); border-radius: 10px; padding: 10px 11px; font: inherit; font-size: 16px; color-scheme: dark; }
+.pt-picker input:focus { outline: none; border-color: var(--k-gold); }
+.pt-picker ul { list-style: none; margin: 0; padding: 4px; max-height: 260px; overflow-y: auto; border: 1px solid var(--k-line); border-radius: 10px; background: var(--k-panel); }
+.pt-picker li button { width: 100%; text-align: left; border: 0; background: none; color: var(--k-text); padding: 9px 10px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.pt-picker li button:hover { background: var(--k-card-2); }
+.pt-picker li button span { color: var(--k-faint); font-size: 11.5px; white-space: nowrap; }
+.pt-none { padding: 10px; color: var(--k-faint); font-size: 12.5px; }
+.pt-picked { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--k-gold-soft); border: 1px solid rgba(242,193,78,0.3); border-radius: 10px; padding: 10px 12px; }
+.pt-picked b { display: block; font-size: 13.5px; }
+.pt-picked span { font-size: 11px; color: var(--k-muted); }

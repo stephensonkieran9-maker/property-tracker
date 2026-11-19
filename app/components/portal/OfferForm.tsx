@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { gbp2 } from "@/lib/portal/format";
 import type { Model, Offer, OfferFields } from "@/lib/portal/types";
+import PropertyPicker from "./PropertyPicker";
 
-export type FormValues = Record<keyof OfferFields | "model" | "notes", string>;
+export type FormValues = Record<Exclude<keyof OfferFields, "hostaway_listing_id"> | "hostaway_listing_id" | "model" | "notes", string>;
 
 const KEYS: Array<keyof FormValues> = [
   "property_name", "address", "apartment_type", "location", "check_in", "check_out", "nights", "adults", "children",
-  "nightly_rate", "commission_pct", "credit_terms_days", "company_contact", "model", "notes",
+  "nightly_rate", "commission_pct", "credit_terms_days", "company_contact", "hostaway_listing_id", "model", "notes",
 ];
 
 export function toValues(o: Partial<Offer> | Partial<OfferFields> | null): FormValues {
@@ -38,6 +39,7 @@ export default function OfferForm({
   const [v, setV] = useState<FormValues>(initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoMatched, setAutoMatched] = useState(false);
 
   const set = (k: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -57,11 +59,13 @@ export default function OfferForm({
   const rate = Number(v.nightly_rate) || 0;
   const value = nights * rate;
   const commission = value * ((Number(v.commission_pct) || 0) / 100);
+  const net = value - commission;
   const dateNights = nightsBetween(v.check_in, v.check_out);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!v.model) return setError("Choose Managed or Arbitraged.");
+    if (v.model === "managed" && !v.hostaway_listing_id && !v.property_name.trim()) return setError("Pick the property from Hostaway.");
     setBusy(true);
     setError(null);
     try {
@@ -94,14 +98,30 @@ export default function OfferForm({
       {note}
       <div className="pt-model" role="radiogroup" aria-label="Managed or arbitraged">
         {(["managed", "arbitraged"] as Model[]).map((m) => (
-          <button key={m} type="button" role="radio" aria-checked={v.model === m} className={v.model === m ? "on" : ""} onClick={() => setV({ ...v, model: m })}>
+          <button key={m} type="button" role="radio" aria-checked={v.model === m} className={v.model === m ? "on" : ""}
+            onClick={() => setV({ ...v, model: m, hostaway_listing_id: m === "managed" ? v.hostaway_listing_id : "" })}>
             {m === "managed" ? "Managed" : "Arbitraged"}
           </button>
         ))}
       </div>
 
+      {v.model === "managed" && (
+        <div className="pt-field wide">
+          <span>Keapr property (Hostaway)<b> *</b></span>
+          <PropertyPicker
+            value={v.hostaway_listing_id ? Number(v.hostaway_listing_id) : null}
+            guess={v.property_name}
+            onPick={(l, auto) => {
+              setAutoMatched(Boolean(auto));
+              setV((prev) => ({ ...prev, hostaway_listing_id: l ? String(l.id) : "", property_name: l ? l.name : prev.property_name }));
+            }}
+          />
+          {autoMatched && v.hostaway_listing_id && <div className="pt-hint">Matched from the screenshot. Check it&apos;s the right property.</div>}
+        </div>
+      )}
+
       <div className="pt-fields">
-        {field("property_name", "Property", { wide: true, required: true })}
+        {v.model !== "managed" || !v.hostaway_listing_id ? field("property_name", v.model === "managed" ? "Property name (if it's not in the list)" : "Property", { wide: true, required: v.model !== "managed" }) : null}
         {field("address", "Address", { wide: true })}
         {field("apartment_type", "Apartment type")}
         {field("location", "Requested location")}
@@ -109,7 +129,7 @@ export default function OfferForm({
         {field("check_out", "Check out", { type: "date" })}
         {field("nights", "Nights", { type: "number", inputMode: "numeric", required: true })}
         {field("nightly_rate", "Nightly rate (£)", { type: "number", inputMode: "decimal", required: true })}
-        {field("commission_pct", "Commission %", { type: "number", inputMode: "decimal" })}
+        {field("commission_pct", "Platform commission %", { type: "number", inputMode: "decimal" })}
         {field("credit_terms_days", "Credit terms (days)", { type: "number", inputMode: "numeric" })}
         {field("adults", "Adults", { type: "number", inputMode: "numeric" })}
         {field("children", "Children", { type: "number", inputMode: "numeric" })}
@@ -126,7 +146,8 @@ export default function OfferForm({
 
       <div className="pt-totals">
         <div><span>Booking value</span><b>{gbp2(value)}</b><small>{nights || 0} nights × {gbp2(rate)}</small></div>
-        <div><span>Commission</span><b>{gbp2(commission)}</b><small>{Number(v.commission_pct) || 0}% of booking value</small></div>
+        <div className="minus"><span>Platform commission</span><b>−{gbp2(commission)}</b><small>{Number(v.commission_pct) || 0}% to the platform</small></div>
+        <div className="net"><span>Net to Keapr</span><b>{gbp2(net)}</b><small>after platform commission</small></div>
       </div>
 
       {error && <div className="pt-error" role="alert">{error}</div>}

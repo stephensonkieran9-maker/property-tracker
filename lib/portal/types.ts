@@ -27,6 +27,8 @@ export interface OfferFields {
   commission_pct: number | null;
   credit_terms_days: number | null;
   company_contact: string | null;
+  /** Hostaway property, for managed offers. */
+  hostaway_listing_id?: number | null;
 }
 
 export interface Offer extends OfferFields {
@@ -36,6 +38,7 @@ export interface Offer extends OfferFields {
   nights: number;
   nightly_rate: number;
   booking_value: number;
+  /** The platform's commission (deducted). Net to Keapr = booking_value − commission_value. */
   commission_value: number;
   model: Model;
   outcome: Outcome;

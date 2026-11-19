@@ -4,7 +4,7 @@ import type { Model, Outcome } from "./types";
 // Validates offer input from the portal before it touches the database.
 
 export const OFFER_COLUMNS =
-  "id, user_id, property_name, address, apartment_type, location, check_in, check_out, nights, adults, children, nightly_rate, commission_pct, credit_terms_days, company_contact, booking_value, commission_value, model, outcome, outcome_at, notes, sent_at";
+  "id, user_id, property_name, address, apartment_type, location, check_in, check_out, nights, adults, children, nightly_rate, commission_pct, credit_terms_days, company_contact, hostaway_listing_id, booking_value, commission_value, model, outcome, outcome_at, notes, sent_at";
 
 const MODELS: Model[] = ["managed", "arbitraged"];
 const OUTCOMES: Outcome[] = ["pending", "won", "lost"];
@@ -47,7 +47,7 @@ export function parseOffer(body: Record<string, unknown>, partial: boolean): { r
   const nums: Array<[string, number, string, boolean]> = [
     ["nights", 1000, "Nights", true],
     ["nightly_rate", 100000, "Nightly rate", true],
-    ["commission_pct", 100, "Commission %", false],
+    ["commission_pct", 100, "Platform commission %", false],
     ["credit_terms_days", 365, "Credit terms", false],
     ["adults", 100, "Adults", false],
     ["children", 100, "Children", false],
@@ -58,6 +58,13 @@ export function parseOffer(body: Record<string, unknown>, partial: boolean): { r
     if (v === undefined) return { error: `${label} doesn't look right.` };
     if (required && (v === null || (k === "nights" && v < 1))) return { error: `Add the ${label.toLowerCase()}.` };
     row[k] = k === "nights" || k === "adults" || k === "children" || k === "credit_terms_days" ? (v === null ? null : Math.round(v)) : v;
+  }
+
+  if (!partial || has("hostaway_listing_id")) {
+    const v = body.hostaway_listing_id;
+    const id = v === null || v === undefined || v === "" ? null : Number(v);
+    if (id !== null && (!Number.isInteger(id) || id <= 0)) return { error: "That property doesn't look right." };
+    row.hostaway_listing_id = id;
   }
 
   if (!partial || has("model")) {

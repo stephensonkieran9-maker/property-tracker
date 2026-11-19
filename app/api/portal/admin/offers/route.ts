@@ -47,13 +47,14 @@ export async function GET(req: Request) {
         ...r,
         person: names.get(String(r.user_id))?.name ?? "",
         sent: new Date(String(r.sent_at)).toLocaleString("en-GB", { timeZone: "Europe/London" }),
+        net: Math.round((Number(r.booking_value) - Number(r.commission_value)) * 100) / 100,
       }));
       const body = toCsv(out, [
         ["sent", "Sent"], ["person", "Person"], ["property_name", "Property"], ["address", "Address"], ["apartment_type", "Apartment type"],
         ["location", "Requested location"], ["check_in", "Check in"], ["check_out", "Check out"], ["nights", "Nights"],
         ["adults", "Adults"], ["children", "Children"], ["nightly_rate", "Nightly rate (£)"], ["booking_value", "Booking value (£)"],
-        ["commission_pct", "Commission %"], ["commission_value", "Commission (£)"], ["credit_terms_days", "Credit terms (days)"],
-        ["company_contact", "Company contact"], ["model", "Model"], ["outcome", "Outcome"], ["notes", "Notes"],
+        ["commission_pct", "Platform commission %"], ["commission_value", "Platform commission (£)"], ["net", "Net to Keapr (£)"], ["credit_terms_days", "Credit terms (days)"],
+        ["company_contact", "Company contact"], ["model", "Model"], ["hostaway_listing_id", "Hostaway listing ID"], ["outcome", "Outcome"], ["notes", "Notes"],
       ]);
       return new NextResponse(body, {
         headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="keapr-offers-${month}.csv"` },
