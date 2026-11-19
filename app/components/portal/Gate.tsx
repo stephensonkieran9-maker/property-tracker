@@ -17,6 +17,12 @@ export default function Gate({ access, adminOnly }: { access: Access; adminOnly?
               <p className="kb-sub">The offers portal needs the Supabase keys in Vercel (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY).</p>
             </>
           )}
+          {access.kind === "error" && (
+            <>
+              <h3>Something&apos;s not connected</h3>
+              <p className="kb-sub">{access.message}</p>
+            </>
+          )}
           {access.kind === "no-access" && (
             <>
               <h3>No access</h3>

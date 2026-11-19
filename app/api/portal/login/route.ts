@@ -17,6 +17,13 @@ export async function POST(req: Request) {
   if (error) return NextResponse.json({ error: "That email and password don't match. Check them and try again." }, { status: 401 });
 
   const access = await getAccess();
+  if (access.kind === "not-configured") {
+    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY is missing in Vercel (property-tracker). Add it, then redeploy." }, { status: 503 });
+  }
+  if (access.kind === "error") {
+    await supabase.auth.signOut();
+    return NextResponse.json({ error: access.message }, { status: 500 });
+  }
   if (access.kind !== "ok") {
     await supabase.auth.signOut();
     return NextResponse.json({ error: "Your account doesn't have access to the offers portal. Ask an admin to add you." }, { status: 403 });
