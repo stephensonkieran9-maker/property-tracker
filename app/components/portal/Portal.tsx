@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, monthName, shiftMonth, shrinkImage, signOut } from "@/lib/portal/format";
-import type { Countdown, LeaderRow, Me, Offer, OfferFields, Outcome } from "@/lib/portal/types";
+import type { Countdown, LeaderRow, Me, Metric, Offer, OfferFields, Outcome } from "@/lib/portal/types";
 import OfferForm, { toValues, type FormValues } from "./OfferForm";
 import { Brand, CountdownCard, Leaderboard, OfferCard } from "./Shared";
 
 interface MeData {
   me: Me;
   month: string;
-  countdown: Countdown;
+  countdowns: Record<Metric, Countdown>;
   offers: Offer[];
   leaderboard: LeaderRow[];
   lb: "month" | "last" | "all";
@@ -26,6 +26,7 @@ export function toPayload(v: FormValues) {
     credit_terms_days: v.credit_terms_days === "" ? null : Number(v.credit_terms_days),
     adults: v.adults === "" ? null : Number(v.adults),
     children: v.children === "" ? null : Number(v.children),
+    worth_to_keapr: v.worth_to_keapr === "" ? null : Number(v.worth_to_keapr),
     hostaway_listing_id: v.model === "managed" && v.hostaway_listing_id ? Number(v.hostaway_listing_id) : null,
   };
 }
@@ -36,6 +37,19 @@ export default function Portal({ me }: { me: Me }) {
   const [month, setMonth] = useState<string | null>(null);
   const [lb, setLb] = useState<"month" | "last" | "all">("month");
   const [error, setError] = useState<string | null>(null);
+  const [metric, setMetricState] = useState<Metric>("value");
+  useEffect(() => {
+    try {
+      const m = localStorage.getItem("kp_metric");
+      if (m === "value" || m === "worth") setMetricState(m);
+    } catch {}
+  }, []);
+  const setMetric = (m: Metric) => {
+    setMetricState(m);
+    try {
+      localStorage.setItem("kp_metric", m);
+    } catch {}
+  };
 
   const load = useCallback(async () => {
     try {
@@ -59,7 +73,7 @@ export default function Portal({ me }: { me: Me }) {
       <Brand right={<><span className="pt-who">{me.name}</span>{me.role === "admin" && <a className="pt-link" href="/admin">Admin</a>}<button className="pt-link" onClick={signOut}>Sign out</button></>} />
       <main className="pt-main">
         {error && <div className="pt-error">{error}</div>}
-        {data ? <CountdownCard c={data.countdown} name={me.name} /> : !error && <div className="pt-loading">Loading…</div>}
+        {data ? <CountdownCard c={data.countdowns[metric]} name={me.name} onMetric={setMetric} /> : !error && <div className="pt-loading">Loading…</div>}
 
         <nav className="pt-tabs">
           {([["upload", "Upload offer"], ["offers", "My offers"], ["leaderboard", "Leaderboard"]] as const).map(([k, l]) => (
@@ -78,7 +92,7 @@ export default function Portal({ me }: { me: Me }) {
           />
         )}
 
-        {tab === "leaderboard" && data && <Leaderboard rows={data.leaderboard} meId={me.id} period={lb} onPeriod={setLb} />}
+        {tab === "leaderboard" && data && <Leaderboard rows={data.leaderboard} meId={me.id} period={lb} onPeriod={setLb} metric={metric} onMetric={setMetric} />}
       </main>
     </div>
   );

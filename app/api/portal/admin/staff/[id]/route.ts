@@ -24,6 +24,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (!Number.isFinite(t) || t < 0) return NextResponse.json({ error: "Target must be a number." }, { status: 400 });
     patch.monthly_target = t;
   }
+  if ("worthTarget" in b) {
+    const t = Number(b.worthTarget);
+    if (!Number.isFinite(t) || t < 0) return NextResponse.json({ error: "Worth target must be a number." }, { status: 400 });
+    patch.worth_target = t;
+  }
   if ("isActive" in b) {
     if (self && !b.isActive) return NextResponse.json({ error: "You can't remove your own access." }, { status: 400 });
     patch.is_active = Boolean(b.isActive);

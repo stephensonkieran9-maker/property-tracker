@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, gbp, monthName, pct, shiftMonth, signOut } from "@/lib/portal/format";
-import type { LeaderRow, Me, Offer, Outcome, Totals } from "@/lib/portal/types";
+import type { LeaderRow, Me, Metric, Offer, Outcome, Totals } from "@/lib/portal/types";
 import OfferForm, { toValues } from "./OfferForm";
 import { toPayload } from "./Portal";
 import { Leaderboard, OfferCard } from "./Shared";
@@ -166,6 +166,7 @@ function Offers() {
           <div className="kb-kpi"><span className="kb-kpi-l">Won</span><span className="kb-kpi-v">{s.won}</span><span className="kb-kpi-s">{s.lost} lost</span></div>
           <div className="kb-kpi"><span className="kb-kpi-l">Win rate</span><span className="kb-kpi-v">{pct(s.won + s.lost ? s.won / (s.won + s.lost) : null)}</span><span className="kb-kpi-s">{s.won ? `1 in ${Math.round((s.sent / s.won) * 10) / 10} accepted` : "won ÷ decided"}</span></div>
           <div className="kb-kpi"><span className="kb-kpi-l">Booking value won</span><span className="kb-kpi-v">{gbp(s.wonValue)}</span><span className="kb-kpi-s">of {gbp(s.sentValue)} offered</span></div>
+          <div className="kb-kpi"><span className="kb-kpi-l">Worth to Keapr won</span><span className="kb-kpi-v">{gbp(s.wonWorth)}</span><span className="kb-kpi-s">from won offers only</span></div>
           <div className="kb-kpi"><span className="kb-kpi-l">Net won (after platform commission)</span><span className="kb-kpi-v">{gbp(s.wonValue - s.wonCommission)}</span><span className="kb-kpi-s">{f.user ? "this person" : "whole team"}, {monthName(f.month)}</span></div>
         </div>
       )}
@@ -191,6 +192,7 @@ interface StaffRow {
   email: string;
   role: "staff" | "admin";
   monthlyTarget: number;
+  worthTarget: number;
   isActive: boolean;
   month: Totals | null;
 }
@@ -199,7 +201,7 @@ function Staff({ meId }: { meId: string }) {
   const [rows, setRows] = useState<StaffRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "staff", monthlyTarget: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "staff", monthlyTarget: "", worthTarget: "" });
   const [adding, setAdding] = useState(false);
 
   const load = useCallback(async () => {
@@ -233,12 +235,12 @@ function Staff({ meId }: { meId: string }) {
       const r = await api<{ created: boolean }>("/api/portal/admin/staff", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ ...form, monthlyTarget: Number(form.monthlyTarget) || 0 }),
+        body: JSON.stringify({ ...form, monthlyTarget: Number(form.monthlyTarget) || 0, worthTarget: Number(form.worthTarget) || 0 }),
       });
       setMsg(r.created
         ? `${form.name} added. Send them the login page and their password.`
         : `${form.name} added. They already had an account (e.g. Training), so they sign in with ${form.password ? "the new password you set" : "their existing password"}.`);
-      setForm({ name: "", email: "", password: "", role: "staff", monthlyTarget: "" });
+      setForm({ name: "", email: "", password: "", role: "staff", monthlyTarget: "", worthTarget: "" });
       setError(null);
       await load();
     } catch (err) {
@@ -278,12 +280,17 @@ function Staff({ meId }: { meId: string }) {
               </div>
               <div className="pt-person-row">
                 <label>
-                  Monthly target £
+                  Booking value target £
                   <input type="number" min={0} inputMode="numeric" defaultValue={r.monthlyTarget || ""}
                     onBlur={(e) => Number(e.target.value || 0) !== r.monthlyTarget && patch(r.id, { monthlyTarget: Number(e.target.value || 0) }, `Target updated for ${r.name}.`)} />
                 </label>
+                <label>
+                  Worth to Keapr target £
+                  <input type="number" min={0} inputMode="numeric" defaultValue={r.worthTarget || ""}
+                    onBlur={(e) => Number(e.target.value || 0) !== r.worthTarget && patch(r.id, { worthTarget: Number(e.target.value || 0) }, `Worth target updated for ${r.name}.`)} />
+                </label>
                 <span className="pt-person-stat">
-                  This month: {r.month ? `${r.month.sent} sent · ${r.month.won} won · ${gbp(r.month.wonValue)}` : "nothing yet"}
+                  This month: {r.month ? `${r.month.sent} sent · ${r.month.won} won · ${gbp(r.month.wonValue)} booking value · ${gbp(r.month.wonWorth)} to Keapr` : "nothing yet"}
                 </span>
               </div>
               <div className="pt-person-btns">
@@ -310,7 +317,8 @@ function Staff({ meId }: { meId: string }) {
             <label className="pt-field wide"><span>Name</span><input value={form.name} onChange={set("name")} required /></label>
             <label className="pt-field wide"><span>Email</span><input type="email" value={form.email} onChange={set("email")} required autoComplete="off" /></label>
             <label className="pt-field wide"><span>Password</span><input type="text" value={form.password} onChange={set("password")} autoComplete="new-password" placeholder="At least 8 characters" /></label>
-            <label className="pt-field wide"><span>Monthly target (£ booking value won)</span><input type="number" min={0} inputMode="numeric" value={form.monthlyTarget} onChange={set("monthlyTarget")} /></label>
+            <label className="pt-field"><span>Monthly target: booking value won (£)</span><input type="number" min={0} inputMode="numeric" value={form.monthlyTarget} onChange={set("monthlyTarget")} /></label>
+            <label className="pt-field"><span>Monthly target: worth to Keapr won (£)</span><input type="number" min={0} inputMode="numeric" value={form.worthTarget} onChange={set("worthTarget")} /></label>
           </div>
           <div className="pt-model" role="radiogroup" aria-label="Role">
             {(["staff", "admin"] as const).map((role) => (
@@ -328,6 +336,7 @@ function Staff({ meId }: { meId: string }) {
 
 function Board() {
   const [period, setPeriod] = useState<"month" | "last" | "all">("month");
+  const [metric, setMetric] = useState<Metric>("value");
   const [rows, setRows] = useState<LeaderRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -337,5 +346,5 @@ function Board() {
   }, [period]);
   if (error) return <div className="pt-error">{error}</div>;
   if (!rows) return <div className="kb-empty">Loading…</div>;
-  return <div className="pt-narrow"><Leaderboard rows={rows} period={period} onPeriod={setPeriod} /></div>;
+  return <div className="pt-narrow"><Leaderboard rows={rows} period={period} onPeriod={setPeriod} metric={metric} onMetric={setMetric} /></div>;
 }

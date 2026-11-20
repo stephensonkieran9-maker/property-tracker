@@ -23,7 +23,7 @@ export async function getAccess(): Promise<Access> {
   const db = createAdminClient();
   const { data: row, error } = await db
     .from("portal_members")
-    .select("role, monthly_target, is_active, profiles!inner(full_name, email, is_active)")
+    .select("role, monthly_target, worth_target, is_active, profiles!inner(full_name, email, is_active)")
     .eq("user_id", user.id)
     .maybeSingle();
   if (error) {
@@ -51,6 +51,7 @@ export async function getAccess(): Promise<Access> {
       email: profile.email,
       role: row.role as Role,
       monthlyTarget: Number(row.monthly_target) || 0,
+      worthTarget: Number(row.worth_target) || 0,
     },
   };
 }

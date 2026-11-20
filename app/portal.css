@@ -148,7 +148,7 @@
 .pt-admin { padding-bottom: 120px; }
 .pt-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
 .pt-filters select { width: auto; font-size: 13px; padding: 8px 10px; }
-.pt-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); margin-bottom: 14px; }
+.pt-kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 14px; }
 @media (max-width: 1000px) { .pt-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
 @media (max-width: 760px) { .pt-grid { grid-template-columns: 1fr; } .pt-filters select { flex: 1 1 45%; } }
@@ -184,3 +184,14 @@
 .pt-picked { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--k-gold-soft); border: 1px solid rgba(242,193,78,0.3); border-radius: 10px; padding: 10px 12px; }
 .pt-picked b { display: block; font-size: 13.5px; }
 .pt-picked span { font-size: 11px; color: var(--k-muted); }
+
+/* Booking value / worth to Keapr toggle */
+.pt-metric { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; background: var(--k-panel); border: 1px solid var(--k-line); border-radius: 10px; padding: 3px; margin-bottom: 10px; }
+.pt-metric button { border: 0; background: none; color: var(--k-muted); padding: 6px 12px; border-radius: 7px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.pt-metric button.on { background: var(--k-gold); color: #17130a; font-weight: 600; }
+.pt-hero-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.pt-hero-head .pt-metric { margin-bottom: 8px; background: rgba(0,0,0,0.25); }
+.pt-worth { border: 1px solid rgba(242,193,78,0.3); background: var(--k-gold-soft); border-radius: 12px; padding: 10px 12px; }
+.pt-worth input { width: 100%; background: var(--k-panel); border: 1px solid var(--k-line); color: var(--k-text); border-radius: 10px; padding: 10px 11px; font: inherit; font-size: 16px; color-scheme: dark; }
+.pt-worth input:focus { outline: none; border-color: var(--k-gold); }
+.pt-worth small { font-size: 11px; color: var(--k-muted); }

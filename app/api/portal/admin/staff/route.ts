@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const db = createAdminClient();
     const [{ data, error }, totals] = await Promise.all([
-      db.from("portal_members").select("user_id, role, monthly_target, is_active, created_at, profiles!inner(full_name, email)"),
+      db.from("portal_members").select("user_id, role, monthly_target, worth_target, is_active, created_at, profiles!inner(full_name, email)"),
       totalsByUser(db, currentMonth()),
     ]);
     if (error) throw new Error(error.message);
@@ -24,6 +24,7 @@ export async function GET() {
         email: p?.email ?? "",
         role: m.role,
         monthlyTarget: Number(m.monthly_target) || 0,
+        worthTarget: Number(m.worth_target) || 0,
         isActive: m.is_active,
         month: totals.get(m.user_id) ?? null,
       };
@@ -47,9 +48,11 @@ export async function POST(req: Request) {
   const password = String(b.password ?? "");
   const role = b.role === "admin" ? "admin" : "staff";
   const target = Number(b.monthlyTarget ?? 0);
+  const worthTarget = Number(b.worthTarget ?? 0);
   if (!name) return NextResponse.json({ error: "Add their name." }, { status: 400 });
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return NextResponse.json({ error: "That email doesn't look right." }, { status: 400 });
   if (password && password.length < 8) return NextResponse.json({ error: "Passwords need at least 8 characters." }, { status: 400 });
+  if (!Number.isFinite(worthTarget) || worthTarget < 0) return NextResponse.json({ error: "Worth target must be a number." }, { status: 400 });
   if (!Number.isFinite(target) || target < 0) return NextResponse.json({ error: "Target must be a number." }, { status: 400 });
 
   const db = createAdminClient();
@@ -75,7 +78,7 @@ export async function POST(req: Request) {
 
   const { error } = await db
     .from("portal_members")
-    .upsert({ user_id: userId, role, monthly_target: target, is_active: true, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+    .upsert({ user_id: userId, role, monthly_target: target, worth_target: worthTarget, is_active: true, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
   if (error) {
     console.error("[staff] member", error);
     return NextResponse.json({ error: "Couldn't give them portal access." }, { status: 500 });

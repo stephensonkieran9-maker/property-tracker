@@ -48,6 +48,7 @@ create table if not exists public.offers (
 alter table public.offers add column if not exists hostaway_listing_id bigint;
 -- Booking platform the offer went through, if the screenshot shows it (added 19 Nov 2026).
 alter table public.offers add column if not exists platform text;
+-- Worth to Keapr, monthly worth target and the totals function: run portal_worth.sql after this file.
 
 create index if not exists offers_sent_at_idx on public.offers (sent_at desc);
 create index if not exists offers_user_sent_idx on public.offers (user_id, sent_at desc);
@@ -59,37 +60,8 @@ alter table public.offers enable row level security;
 revoke all on public.portal_members from anon, authenticated;
 revoke all on public.offers from anon, authenticated;
 
--- Per-person totals for a period (null bounds = all time). Used for the
--- leaderboard and the countdown, so they stay fast however many offers there are.
-create or replace function public.portal_offer_totals(p_from timestamptz, p_to timestamptz)
-returns table (
-  user_id uuid,
-  sent bigint,
-  won bigint,
-  lost bigint,
-  pending bigint,
-  sent_value numeric,
-  won_value numeric,
-  won_commission numeric
-)
-language sql stable security definer set search_path = public
-as $$
-  select o.user_id,
-         count(*),
-         count(*) filter (where o.outcome = 'won'),
-         count(*) filter (where o.outcome = 'lost'),
-         count(*) filter (where o.outcome = 'pending'),
-         coalesce(sum(o.booking_value), 0),
-         coalesce(sum(o.booking_value) filter (where o.outcome = 'won'), 0),
-         coalesce(sum(o.commission_value) filter (where o.outcome = 'won'), 0)
-  from public.offers o
-  where (p_from is null or o.sent_at >= p_from)
-    and (p_to is null or o.sent_at < p_to)
-  group by o.user_id;
-$$;
-
-revoke all on function public.portal_offer_totals(timestamptz, timestamptz) from public, anon, authenticated;
-grant execute on function public.portal_offer_totals(timestamptz, timestamptz) to service_role;
+-- Per-person totals for a period (null bounds = all time), used for the leaderboard
+-- and the countdown. Created in portal_worth.sql (includes worth to Keapr).
 
 -- Training admins become portal admins, so you can sign straight in.
 insert into public.portal_members (user_id, role)

@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { currentMonth, monthBounds, workdaysLeft } from "./period";
-import { EMPTY_TOTALS, type Countdown, type LeaderRow, type Me, type Totals } from "./types";
+import { EMPTY_TOTALS, type Countdown, type LeaderRow, type Me, type Metric, type Totals } from "./types";
 
 type Db = ReturnType<typeof createAdminClient>;
 
@@ -14,6 +14,7 @@ interface TotalsRow {
   sent_value: number | string;
   won_value: number | string;
   won_commission: number | string;
+  won_worth?: number | string;
 }
 
 /** Per-person totals for a month (YYYY-MM) or all time (null). */
@@ -31,6 +32,7 @@ export async function totalsByUser(db: Db, month: string | null): Promise<Map<st
       sentValue: Number(r.sent_value),
       wonValue: Number(r.won_value),
       wonCommission: Number(r.won_commission),
+      wonWorth: Number(r.won_worth ?? 0),
     });
   }
   return out;
@@ -46,6 +48,7 @@ export function sumTotals(list: Iterable<Totals>): Totals {
     t.sentValue += x.sentValue;
     t.wonValue += x.wonValue;
     t.wonCommission += x.wonCommission;
+    t.wonWorth += x.wonWorth;
   }
   return t;
 }
@@ -87,40 +90,47 @@ const MIN_DECIDED = 5; // outcomes needed before a win rate is trusted
 
 /**
  * "At your current win rate, you need X more offers to hit your target."
- * Value per offer = booking value won ÷ offers with an outcome (won or lost).
+ * Works in booking value or worth to Keapr (each has its own target).
+ * Value per offer = amount won ÷ offers with an outcome (won or lost).
  * Uses this month if there are 5+ outcomes, otherwise the person's all-time
  * record, otherwise the whole team's.
  */
-export async function countdown(db: Db, me: Me, month = currentMonth()): Promise<Countdown> {
+export async function countdowns(db: Db, me: Me, month = currentMonth()): Promise<Record<Metric, Countdown>> {
   const [monthTotals, allTotals] = await Promise.all([totalsByUser(db, month), totalsByUser(db, null)]);
   const mine = monthTotals.get(me.id) ?? EMPTY_TOTALS;
   const mineAll = allTotals.get(me.id) ?? EMPTY_TOTALS;
   const team = sumTotals(allTotals.values());
-
-  const decided = (t: Totals) => t.won + t.lost;
-  let basis: Countdown["basis"] = null;
-  let src: Totals | null = null;
-  if (decided(mine) >= MIN_DECIDED && mine.won > 0) [basis, src] = ["month", mine];
-  else if (decided(mineAll) >= MIN_DECIDED && mineAll.won > 0) [basis, src] = ["all-time", mineAll];
-  else if (decided(team) >= MIN_DECIDED && team.won > 0) [basis, src] = ["team", team];
-
-  const valuePerOffer = src ? src.wonValue / decided(src) : null;
-  const remaining = Math.max(0, me.monthlyTarget - mine.wonValue);
   const left = workdaysLeft(month);
-  const offersNeeded = valuePerOffer && me.monthlyTarget > 0 ? Math.ceil(remaining / valuePerOffer) : null;
+  const decided = (t: Totals) => t.won + t.lost;
 
-  return {
-    target: me.monthlyTarget,
-    wonValue: mine.wonValue,
-    remaining,
-    offersNeeded,
-    perDay: offersNeeded !== null && left > 0 ? Math.ceil(offersNeeded / left) : null,
-    workdaysLeft: left,
-    valuePerOffer,
-    basis,
-    sent: mine.sent,
-    won: mine.won,
-    winRate: winRate(mine),
-    oneIn: mine.won > 0 ? Math.round((mine.sent / mine.won) * 10) / 10 : null,
+  const build = (metric: Metric): Countdown => {
+    const amount = (t: Totals) => (metric === "worth" ? t.wonWorth : t.wonValue);
+    const target = metric === "worth" ? me.worthTarget : me.monthlyTarget;
+    let basis: Countdown["basis"] = null;
+    let src: Totals | null = null;
+    if (decided(mine) >= MIN_DECIDED && amount(mine) > 0) [basis, src] = ["month", mine];
+    else if (decided(mineAll) >= MIN_DECIDED && amount(mineAll) > 0) [basis, src] = ["all-time", mineAll];
+    else if (decided(team) >= MIN_DECIDED && amount(team) > 0) [basis, src] = ["team", team];
+
+    const valuePerOffer = src ? amount(src) / decided(src) : null;
+    const won = amount(mine);
+    const remaining = Math.max(0, target - won);
+    const offersNeeded = valuePerOffer && target > 0 ? Math.ceil(remaining / valuePerOffer) : null;
+    return {
+      metric,
+      target,
+      wonValue: won,
+      remaining,
+      offersNeeded,
+      perDay: offersNeeded !== null && left > 0 ? Math.ceil(offersNeeded / left) : null,
+      workdaysLeft: left,
+      valuePerOffer,
+      basis,
+      sent: mine.sent,
+      won: mine.won,
+      winRate: winRate(mine),
+      oneIn: mine.won > 0 ? Math.round((mine.sent / mine.won) * 10) / 10 : null,
+    };
   };
+  return { value: build("value"), worth: build("worth") };
 }

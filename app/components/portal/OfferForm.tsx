@@ -9,7 +9,7 @@ export type FormValues = Record<Exclude<keyof OfferFields, "hostaway_listing_id"
 
 const KEYS: Array<keyof FormValues> = [
   "property_name", "address", "apartment_type", "location", "check_in", "check_out", "nights", "adults", "children",
-  "nightly_rate", "commission_pct", "credit_terms_days", "company_contact", "platform", "hostaway_listing_id", "model", "notes",
+  "nightly_rate", "commission_pct", "credit_terms_days", "company_contact", "platform", "worth_to_keapr", "hostaway_listing_id", "model", "notes",
 ];
 
 export function toValues(o: Partial<Offer> | Partial<OfferFields> | null): FormValues {
@@ -148,8 +148,14 @@ export default function OfferForm({
       <div className="pt-totals">
         <div><span>Booking value</span><b>{gbp2(value)}</b><small>{nights || 0} nights × {gbp2(rate)}</small></div>
         <div className="minus"><span>Platform commission</span><b>−{gbp2(commission)}</b><small>{Number(v.commission_pct) || 0}% to the platform</small></div>
-        <div className="net"><span>Net to Keapr</span><b>{gbp2(net)}</b><small>after platform commission</small></div>
+        <div className="net"><span>After platform commission</span><b>{gbp2(net)}</b><small>booking value less the platform cut</small></div>
       </div>
+
+      <label className="pt-field pt-worth">
+        <span>Worth to Keapr (£)</span>
+        <input type="number" min={0} step="any" inputMode="decimal" value={v.worth_to_keapr} onChange={set("worth_to_keapr")} placeholder="What this booking is worth to us" />
+        <small>Leave blank if you don&apos;t know yet. It only counts once the offer is marked Won.</small>
+      </label>
 
       {error && <div className="pt-error" role="alert">{error}</div>}
       <div className="pt-actions">
