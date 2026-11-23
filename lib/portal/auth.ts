@@ -33,8 +33,10 @@ export async function getAccess(): Promise<Access> {
       kind: "error",
       message: /Invalid API key|JWT|apikey|signature/i.test(m)
         ? "The SUPABASE_SERVICE_ROLE_KEY in Vercel isn't right for this Supabase project. Copy it again from Training and redeploy."
-        : /portal_members|does not exist|schema cache/i.test(m)
+        : /relation .*portal_members.* does not exist/i.test(m)
         ? "The portal tables aren't in this Supabase project. Run supabase/portal_offers.sql in the SQL Editor."
+        : /column .* does not exist|schema cache/i.test(m)
+        ? `The database is missing a recent update. Run supabase/portal_worth.sql in the SQL Editor. (Supabase said: ${m})`
         : `Couldn't check portal access: ${m}`,
     };
   }
