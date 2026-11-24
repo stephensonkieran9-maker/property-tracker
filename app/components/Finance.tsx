@@ -101,6 +101,7 @@ export default function Finance() {
           <div className={`kb-fade${busy ? " busy" : ""}`}>
             <Head data={data} set={set} />
             <Kpis t={data.totals} prev={data.previous} data={data} />
+            <Combined data={data} />
             <Trend data={data} onPick={(m) => set({ period: "month", key: m })} />
             <div className="kb-grid kb-2col">
               <Channels data={data} />
@@ -158,6 +159,41 @@ function Head({ data, set }: { data: FinanceData; set: (c: Record<string, string
         <p className="kf-note">Includes nights later in the period that are already booked. The figure will grow as more bookings come in.</p>
       )}
     </>
+  );
+}
+
+function Combined({ data }: { data: FinanceData }) {
+  const c = data.combined;
+  if (!c) return null;
+  const ch = change(c.total, c.previous.total);
+  return (
+    <section className="kb-card kc-card" style={{ marginBottom: 14 }}>
+      <div className="kc-main">
+        <span className="kb-kpi-l">Keapr Revenue Combined · {data.label}</span>
+        <span className="kc-total">{gbp(c.total)}</span>
+        <span className="kb-kpi-s">
+          {ch && <span className={ch.up ? "kb-up" : "kb-down"}>{ch.txt}</span>} vs {c.previous.label} ({gbp(c.previous.total)})
+        </span>
+        <span className="kb-kpi-s">By booking date · whole portfolio{data.group !== "All" ? ", not just this area" : ""}</span>
+      </div>
+      <div className="kc-parts">
+        <div className="kc-part">
+          <span className="kb-kpi-l">Hostaway bookings</span>
+          <span className="kc-v">{gbp(c.hostawayNet)}</span>
+          <span className="kb-kpi-s">{gbp(c.hostawayGross)} booked − {c.platformPct}% platform commission{c.offersAvailable ? " · offer bookings counted on the right" : ""}</span>
+        </div>
+        <span className="kc-plus">+</span>
+        <div className="kc-part">
+          <span className="kb-kpi-l">Offers won</span>
+          <span className="kc-v">{c.offersAvailable ? gbp(c.offersWon) : "—"}</span>
+          <span className="kb-kpi-s">
+            {c.offersAvailable
+              ? `${gbp(c.managedOffers)} managed (${c.managedOffersCount}, no commission) + ${gbp(c.arbitraged)} arbitraged (${c.arbitragedCount})${c.estimated ? ` · ${c.estimated} arbitraged without worth to Keapr yet, estimated` : ""}`
+              : `Not included: ${c.offersError ?? "offers not available"}`}
+          </span>
+        </div>
+      </div>
+    </section>
   );
 }
 

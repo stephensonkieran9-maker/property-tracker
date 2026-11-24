@@ -6,6 +6,8 @@ import type { Reservation, Unit } from "./boardTypes";
 import { addDays, daysInMonth, londonStamp, londonToday, monthLabel } from "./dates";
 import { loadRaw } from "./board";
 import { isDemo } from "./hostaway";
+import { combinedFor, loadOfferContext, type CombinedPart } from "./combined";
+import { HOSTAWAY_PLATFORM_COMMISSION } from "./targets";
 
 export type Basis = "stay" | "booking";
 export type Period = "month" | "year";
@@ -55,6 +57,13 @@ export interface Finance {
   channels: Array<{ name: string; revenue: number; bookings: number; commission: number | null }>;
   areas: Array<{ name: string; revenue: number; nights: number; units: number; occupancyPct: number; adr: number }>;
   properties: Array<{ id: number; name: string; area: string; revenue: number; nights: number; occupancyPct: number; adr: number }>;
+  /** Keapr Revenue Combined for the period, by booking date (whole portfolio), and the previous period to the same day. */
+  combined: CombinedPart & {
+    platformPct: number;
+    offersAvailable: boolean;
+    offersError?: string;
+    previous: { label: string; total: number };
+  };
   /** Stay revenue already on the books: rest of this month, then the next five months. */
   forward: Array<{ month: string; revenue: number; occupancyPct: number }>;
 }
@@ -188,6 +197,28 @@ export async function getFinance(opts: { period?: string; key?: string; basis?: 
   }
   const previous = { label: pLabel, totals: totalsFor(res, allRes, units, pStart, pEnd, basis) };
 
+  // Keapr Revenue Combined: always by booking date (so up to today), whole portfolio.
+  const cEnd = end > today ? today : end;
+  let cpEnd: string, cpLabel: string;
+  if (period === "month") {
+    const pm = monthsBack(key, 2)[0];
+    const sameDay = Math.min(Number(cEnd.slice(8, 10)), daysInMonth(pm));
+    cpEnd = cEnd < end ? `${pm}-${String(sameDay).padStart(2, "0")}` : mEnd(pm);
+    cpLabel = cEnd < end ? `${monthLabel(pm)} to the same day` : monthLabel(pm);
+  } else {
+    const py = String(Number(key) - 1);
+    cpEnd = cEnd < end ? `${py}${cEnd.slice(4)}` : `${py}-12-31`;
+    cpLabel = cEnd < end ? `${py} to the same day` : py;
+  }
+  const ctx = await loadOfferContext(raw.reservations, pStart);
+  const combined: Finance["combined"] = {
+    ...combinedFor(ctx, raw.reservations, start, cEnd),
+    platformPct: Math.round(HOSTAWAY_PLATFORM_COMMISSION * 100),
+    offersAvailable: ctx.available,
+    offersError: ctx.error,
+    previous: { label: cpLabel, total: combinedFor(ctx, raw.reservations, pStart, cpEnd).total },
+  };
+
   // Monthly trend.
   const trendMonths =
     period === "year"
@@ -317,6 +348,7 @@ export async function getFinance(opts: { period?: string; key?: string; basis?: 
     channels,
     areas,
     properties,
+    combined,
     forward,
   };
 }

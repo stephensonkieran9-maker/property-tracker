@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getFinance } from "@/lib/finance";
 
 export const runtime = "nodejs";
-// Vercel's edge answers repeat requests for 30s, then serves the last answer while it fetches a new one.
-const EDGE_CACHE = { "Cache-Control": "s-maxage=30, stale-while-revalidate=600" };
+// Not cached at Vercel's edge: it includes offers, which change all day. (Hostaway data is held in memory.)
+const EDGE_CACHE = { "Cache-Control": "private, no-store" };
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {

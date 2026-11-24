@@ -17,7 +17,7 @@ export function shiftMonth(m: string, by: number): string {
 }
 
 /** The UTC instant of midnight UK time on a day (YYYY-MM-DD). */
-function ukMidnight(day: string): Date {
+export function ukMidnight(day: string): Date {
   const [y, mm, d] = day.split("-").map(Number);
   const guess = new Date(Date.UTC(y, mm - 1, d));
   // UK is UTC or UTC+1; find the offset at that moment and subtract it.
