@@ -1,7 +1,7 @@
 import type { Board, Combined, Conversation, Problem, ProblemKind, RawData, Reservation, TargetProgress, Unit } from "./boardTypes";
 import { addDays, daysInMonth, londonStamp, londonToday, minutesBetween, monthEnd, monthLabel, monthStart, prevMonth, weekdayShort } from "./dates";
 import { HOSTAWAY_PLATFORM_COMMISSION, NIGHTLY_OCCUPANCY_TARGET, TEAM_TARGETS, targetFor } from "./targets";
-import { actualFor, arbitragedWon, loadTargets, offerActuals, targetsConfigured, type TargetRow, type TargetSource } from "./boardTargets";
+import { actualFor, arbitragedWon, loadTargets, managedWon, offerActuals, targetsConfigured, type TargetRow, type TargetSource } from "./boardTargets";
 import { isDemo } from "./hostaway";
 import { getSnapshot } from "./snapshot";
 import { mockRawData } from "./mockBoard";
@@ -236,28 +236,61 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
   // Team targets and Keapr Revenue Combined are company-wide, so an area filter doesn't change them.
   const company = group === "All" ? null : await getBoard({ month });
 
-  // ── Keapr Revenue Combined: Hostaway less 12% platform commission + arbitraged offers won
+  // ── Keapr Revenue Combined
+  //   Hostaway bookings less 12% platform commission, except bookings that came from a won
+  //   managed offer (no commission, counted in full), plus arbitraged offers won (not in Hostaway).
+  //   Managed offers are matched to their Hostaway reservation (same property + check-in), so nothing is counted twice.
   let combined: Combined;
   if (company) combined = company.month.combined;
   else {
     const keep = 1 - HOSTAWAY_PLATFORM_COMMISSION;
-    const hostawayNet = Math.round(monthRevenue * keep);
-    const ytdHostawayNet = Math.round(runningTotal * keep);
     let arb = { month: 0, monthCount: 0, ytd: 0, estimated: 0 };
+    let fromOffers = new Set<number>(); // Hostaway reservation ids that came from won managed offers
+    let unmatched = 0;
     let offersAvailable = false;
     let offersError: string | undefined;
     if (targetsConfigured() && !isDemo()) {
       try {
-        arb = await arbitragedWon(month);
+        const [a, managed] = await Promise.all([arbitragedWon(month), managedWon(addDays(yearStart, -400))]);
+        arb = a;
+        const byKey = new Map<string, Reservation[]>();
+        for (const r of raw.reservations) {
+          if (r.status !== "confirmed") continue;
+          const k = `${r.listingId}|${r.arrival}`;
+          (byKey.get(k) ?? byKey.set(k, []).get(k)!).push(r);
+        }
+        for (const o of managed) {
+          const cands = (byKey.get(`${o.listingId}|${o.checkIn}`) ?? []).filter((r) => !fromOffers.has(r.id));
+          const hit = cands.find((r) => !o.checkOut || r.departure === o.checkOut) ?? cands[0];
+          if (hit) fromOffers.add(hit.id);
+          else unmatched++;
+        }
         offersAvailable = true;
       } catch (e) {
         offersError = e instanceof Error ? e.message : "Offers not available";
+        fromOffers = new Set();
       }
     } else offersError = isDemo() ? "Demo data" : "Offers database not connected";
+
+    const split = (list: Reservation[]) => {
+      let offer = 0, n = 0, other = 0;
+      for (const r of list) {
+        if (fromOffers.has(r.id)) { offer += r.total; n++; }
+        else other += r.total;
+      }
+      return { offer, n, other };
+    };
+    const m = split(monthBookings);
+    const y = split(confirmed.filter((r) => r.bookedOn.slice(0, 10) >= yearStart && r.bookedOn.slice(0, 10) <= ytdEnd));
+    const hostawayNet = Math.round(m.other * keep + m.offer);
+    const ytdHostawayNet = Math.round(y.other * keep + y.offer);
     combined = {
       hostawayGross: Math.round(monthRevenue),
       platformPct: Math.round(HOSTAWAY_PLATFORM_COMMISSION * 100),
       hostawayNet,
+      managedOffers: Math.round(m.offer),
+      managedOffersCount: m.n,
+      managedUnmatched: unmatched,
       arbitraged: arb.month,
       arbitragedCount: arb.monthCount,
       estimated: arb.estimated,

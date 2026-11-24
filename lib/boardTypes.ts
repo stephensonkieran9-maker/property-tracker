@@ -197,7 +197,13 @@ export interface Combined {
   hostawayGross: number;
   /** Platform commission taken off each Hostaway booking, as a %. */
   platformPct: number;
+  /** Hostaway bookings less commission, with bookings from won managed offers counted in full. */
   hostawayNet: number;
+  /** Hostaway bookings in the month that came from won managed offers (no commission taken). */
+  managedOffers: number;
+  managedOffersCount: number;
+  /** Won managed offers not found in Hostaway yet (any month). */
+  managedUnmatched: number;
   /** Arbitraged offers won (not in Hostaway): worth to Keapr. */
   arbitraged: number;
   arbitragedCount: number;

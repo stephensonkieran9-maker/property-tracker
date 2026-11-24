@@ -354,7 +354,10 @@ function Combined({ data }: { data: BoardData }) {
         <div className="kc-part">
           <span className="kb-kpi-l">Hostaway bookings</span>
           <span className="kc-v">{gbp(c.hostawayNet)}</span>
-          <span className="kb-kpi-s">{gbp(c.hostawayGross)} booked − {c.platformPct}% platform commission</span>
+          <span className="kb-kpi-s">
+            {gbp(c.hostawayGross)} booked · {c.platformPct}% platform commission off everything
+            {c.managedOffersCount ? ` except ${gbp(c.managedOffers)} from ${c.managedOffersCount} managed offer${c.managedOffersCount === 1 ? "" : "s"} (no commission)` : ""}
+          </span>
         </div>
         <span className="kc-plus">+</span>
         <div className="kc-part">

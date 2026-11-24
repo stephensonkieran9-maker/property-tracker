@@ -181,3 +181,18 @@ export async function personHistory(month: string, n = 6): Promise<Record<string
   }
   return out;
 }
+
+/** Won managed offers with a Hostaway property and check-in, for matching to Hostaway reservations. */
+export async function managedWon(sinceCheckIn: string, db: Db = createAdminClient()): Promise<Array<{ listingId: number; checkIn: string; checkOut: string | null }>> {
+  const { data, error } = await db
+    .from("offers")
+    .select("hostaway_listing_id, check_in, check_out")
+    .eq("outcome", "won")
+    .eq("model", "managed")
+    .not("hostaway_listing_id", "is", null)
+    .not("check_in", "is", null)
+    .gte("check_in", sinceCheckIn)
+    .limit(20000);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({ listingId: Number(r.hostaway_listing_id), checkIn: String(r.check_in), checkOut: r.check_out ? String(r.check_out) : null }));
+}
