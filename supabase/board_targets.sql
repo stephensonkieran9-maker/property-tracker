@@ -58,6 +58,7 @@ begin
   -- People. Anyone on the offers portal is linked to their offers; the rest are manual.
   foreach n in array array['Gelo', 'Darwin', 'Christine'] loop
     amt := case n when 'Gelo' then 20000 when 'Darwin' then 5000 else 10000 end;
+    uid := null;
     select m.user_id into uid
       from public.portal_members m join public.profiles p on p.id = m.user_id
      where m.is_active and p.full_name ilike n || '%'
