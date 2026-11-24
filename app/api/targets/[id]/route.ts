@@ -5,6 +5,7 @@ import { isOffers, type TargetSource } from "@/lib/boardTargets";
 import { parseTarget } from "@/lib/boardTargetsInput";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 

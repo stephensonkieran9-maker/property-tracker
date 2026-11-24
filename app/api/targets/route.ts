@@ -5,6 +5,7 @@ import { isOffers, loadTargets, staffOptions } from "@/lib/boardTargets";
 import { parseTarget } from "@/lib/boardTargetsInput";
 
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 // Dashboard targets: list (with the offers team, for linking people) and add.
 export async function GET() {

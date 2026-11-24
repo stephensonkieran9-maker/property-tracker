@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 // (The Hostaway snapshot behind it is already held in memory, so this stays quick.)
 const EDGE_CACHE = { "Cache-Control": "private, no-store" };
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
