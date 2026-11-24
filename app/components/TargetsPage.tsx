@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSvgWidth } from "@/lib/useSvgWidth";
 import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
+import TargetsEditor from "./TargetsEditor";
 
 type History = Record<string, Array<{ month: string; target: number; actual: number | null }>>;
 type Fmt = TargetProgress["format"];
@@ -31,17 +32,19 @@ export default function TargetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (m: string | null) => {
+  const load = useCallback(async (m: string | null, fresh = false) => {
     setBusy(true);
     try {
       const q = m ? `?month=${m}` : "";
-      const cb = readCache<Board>(`/api/board${q}`);
-      const ch = readCache<{ history: History }>(`/api/targets/history${q}`);
+      // After an edit, skip the 30-second edge cache so the change shows straight away.
+      const bust = fresh ? `${q ? "&" : "?"}fresh=${Date.now()}` : "";
+      const cb = fresh ? null : readCache<Board>(`/api/board${q}`);
+      const ch = fresh ? null : readCache<{ history: History }>(`/api/targets/history${q}`);
       if (cb) setData(cb);
       if (ch) setHist(ch.history ?? {});
       const [b, h] = await Promise.all([
-        fetch(`/api/board${q}`, { cache: "no-store" }).then(async (r) => ({ ok: r.ok, j: await r.json() })),
-        fetch(`/api/targets/history${q}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({ history: {} })),
+        fetch(`/api/board${q}${bust}`, { cache: "no-store" }).then(async (r) => ({ ok: r.ok, j: await r.json() })),
+        fetch(`/api/targets/history${q}${bust}`, { cache: "no-store" }).then((r) => r.json()).catch(() => ({ history: {} })),
       ]);
       if (!b.ok) throw new Error(b.j.error || "Failed to load");
       setData(b.j);
@@ -68,14 +71,16 @@ export default function TargetsPage() {
       <main className="kb-main">
         {!data && !error && <div className="kb-loading">Loading targets…</div>}
         {error && !data && <div className="kb-error">Couldn&apos;t load targets: {error}</div>}
-        {data && <Content data={data} hist={hist} busy={busy} go={go} />}
+        {data && <Content data={data} hist={hist} busy={busy} go={go} reload={() => load(month, true)} />}
       </main>
     </>
   );
 }
 
-function Content({ data, hist, busy, go }: { data: Board; hist: History; busy: boolean; go: (m: string | null) => void }) {
+function Content({ data, hist, busy, go, reload }: { data: Board; hist: History; busy: boolean; go: (m: string | null) => void; reload: () => void }) {
   const m = data.month;
+  const [editing, setEditing] = useState(false);
+  const editable = data.targetsAdmin?.editable;
   const current = data.today.slice(0, 7);
   const day = m.isCurrent ? Number(data.today.slice(8, 10)) : m.daysInMonth;
   const left = m.daysInMonth - day;
@@ -94,6 +99,7 @@ function Content({ data, hist, busy, go }: { data: Board; hist: History; busy: b
         </div>
         <div className="kb-headr">
           {data.demo && <span className="kb-demo">DEMO DATA</span>}
+          {editable && !editing && <button className="kt-btn" onClick={() => setEditing(true)}>Edit targets</button>}
           <div className="kb-picker">
             {!m.isCurrent && <button className="kb-today" onClick={() => go(null)}>This month</button>}
             <button aria-label="Previous month" onClick={() => go(shiftMonth(m.key, -1))}>‹</button>
@@ -102,6 +108,13 @@ function Content({ data, hist, busy, go }: { data: Board; hist: History; busy: b
           </div>
         </div>
       </div>
+
+      {editing && (
+        <section className="kb-card" style={{ marginBottom: 18 }}>
+          <TargetsEditor month={m.key} monthLabel={m.label} onChanged={reload} onClose={() => setEditing(false)} />
+        </section>
+      )}
+      {!editable && data.targetsAdmin?.note && <p className="kb-sub">To edit targets: {data.targetsAdmin.note}</p>}
 
       <div className="kt-section">
         <h2>People</h2>
