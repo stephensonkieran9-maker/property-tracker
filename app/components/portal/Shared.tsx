@@ -13,11 +13,29 @@ export function MetricToggle({ metric, onMetric }: { metric: Metric; onMetric: (
   );
 }
 
+export type OfferPeriod = "day" | "week" | "month" | "all";
+export type LbPeriod = "day" | "week" | "month" | "last" | "all";
+
+/** Today / This week / Month / All time switch for offer lists. */
+export function PeriodPills({ period, onPeriod }: { period: OfferPeriod; onPeriod: (p: OfferPeriod) => void }) {
+  return (
+    <div className="kb-pills pt-period" role="radiogroup" aria-label="Period">
+      {([["day", "Day"], ["week", "Week"], ["month", "Month"], ["all", "All"]] as const).map(([k, l]) => (
+        <button key={k} type="button" role="radio" aria-checked={period === k} className={`kb-pill${period === k ? " on" : ""}`} onClick={() => onPeriod(k)}>{l}</button>
+      ))}
+    </div>
+  );
+}
+
+export function periodName(p: OfferPeriod, month: string, monthName: (m: string) => string): string {
+  return p === "day" ? "Today" : p === "week" ? "This week" : p === "all" ? "All time" : monthName(month);
+}
+
 export function Leaderboard({ rows, meId, period, onPeriod, metric, onMetric }: {
   rows: LeaderRow[];
   meId?: string;
-  period: string;
-  onPeriod: (p: "month" | "last" | "all") => void;
+  period: LbPeriod;
+  onPeriod: (p: LbPeriod) => void;
   metric: Metric;
   onMetric: (m: Metric) => void;
 }) {
@@ -32,7 +50,7 @@ export function Leaderboard({ rows, meId, period, onPeriod, metric, onMetric }: 
           <p className="kb-sub">Ranked by {metric === "worth" ? "worth to Keapr" : "booking value"} won</p>
         </div>
         <div className="kb-pills">
-          {([["month", "This month"], ["last", "Last month"], ["all", "All time"]] as const).map(([k, l]) => (
+          {([["day", "Today"], ["week", "This week"], ["month", "This month"], ["last", "Last month"], ["all", "All time"]] as const).map(([k, l]) => (
             <button key={k} className={`kb-pill${period === k ? " on" : ""}`} onClick={() => onPeriod(k)}>{l}</button>
           ))}
         </div>

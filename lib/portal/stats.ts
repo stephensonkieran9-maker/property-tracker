@@ -17,9 +17,9 @@ interface TotalsRow {
   won_worth?: number | string;
 }
 
-/** Per-person totals for a month (YYYY-MM) or all time (null). */
-export async function totalsByUser(db: Db, month: string | null): Promise<Map<string, Totals>> {
-  const b = month ? monthBounds(month) : null;
+/** Per-person totals for a month (YYYY-MM), explicit bounds, or all time (null). */
+export async function totalsByUser(db: Db, month: string | { from: string; to: string } | null): Promise<Map<string, Totals>> {
+  const b = month === null ? null : typeof month === "string" ? monthBounds(month) : month;
   const { data, error } = await db.rpc("portal_offer_totals", { p_from: b?.from ?? null, p_to: b?.to ?? null });
   if (error) throw new Error(`Couldn't load totals: ${error.message}`);
   const out = new Map<string, Totals>();
@@ -72,7 +72,7 @@ export async function peopleNames(db: Db, ids: string[]): Promise<Map<string, { 
 }
 
 /** Ranked by booking value won, then offers won. Shows active staff even with nothing yet. */
-export async function leaderboard(db: Db, month: string | null): Promise<LeaderRow[]> {
+export async function leaderboard(db: Db, month: string | { from: string; to: string } | null): Promise<LeaderRow[]> {
   const totals = await totalsByUser(db, month);
   const names = await peopleNames(db, [...totals.keys()]);
   const ids = new Set<string>(totals.keys());

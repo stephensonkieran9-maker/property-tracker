@@ -83,5 +83,20 @@ export async function POST(req: Request) {
     console.error("[staff] member", error);
     return NextResponse.json({ error: "Couldn't give them portal access." }, { status: 500 });
   }
+
+  // New staff show up in the dashboard's team targets, linked to their offers.
+  if (role === "staff") {
+    try {
+      const { data: has } = await db.from("board_targets").select("id").eq("user_id", userId).limit(1);
+      if (!has?.length) {
+        const { data: last } = await db.from("board_targets").select("sort").eq("kind", "person").order("sort", { ascending: false }).limit(1);
+        await db.from("board_targets").insert({
+          kind: "person", label: name.split(" ")[0], source: "offers_value", user_id: userId, unit: "gbp", target, sort: (Number(last?.[0]?.sort) || 0) + 1,
+        });
+      }
+    } catch (e) {
+      console.error("[staff] board target", e); // board_targets.sql not run yet: nothing to link
+    }
+  }
   return NextResponse.json({ ok: true, created });
 }

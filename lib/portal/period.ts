@@ -16,13 +16,45 @@ export function shiftMonth(m: string, by: number): string {
   return new Date(Date.UTC(y, mm - 1 + by, 1)).toISOString().slice(0, 7);
 }
 
-/** The UTC instant of midnight UK time on the 1st of the month. */
-function ukMonthStart(m: string): Date {
-  const [y, mm] = m.split("-").map(Number);
-  const guess = new Date(Date.UTC(y, mm - 1, 1));
+/** The UTC instant of midnight UK time on a day (YYYY-MM-DD). */
+function ukMidnight(day: string): Date {
+  const [y, mm, d] = day.split("-").map(Number);
+  const guess = new Date(Date.UTC(y, mm - 1, d));
   // UK is UTC or UTC+1; find the offset at that moment and subtract it.
   const ukHour = Number(guess.toLocaleString("en-GB", { timeZone: TZ, hour: "2-digit", hourCycle: "h23" }));
   return new Date(guess.getTime() - (ukHour === 0 ? 0 : ukHour) * 3600_000);
+}
+
+/** The UTC instant of midnight UK time on the 1st of the month. */
+function ukMonthStart(m: string): Date {
+  return ukMidnight(`${m}-01`);
+}
+
+function addDay(day: string, n: number): string {
+  return new Date(new Date(day + "T12:00:00Z").getTime() + n * 86400_000).toISOString().slice(0, 10);
+}
+
+/** How offers are grouped: today, this week (Mon–Sun), a month, or all time. */
+export type Period = "day" | "week" | "month" | "all";
+
+export function isPeriod(v: string | null | undefined): v is Period {
+  return v === "day" || v === "week" || v === "month" || v === "all";
+}
+
+/** Bounds for a period in UK time; null = all time. `month` is used for "month". */
+export function periodBounds(period: Period, month = currentMonth(), now = new Date()): { from: string; to: string } | null {
+  if (period === "all") return null;
+  if (period === "month") return monthBounds(month);
+  const today = now.toLocaleDateString("en-CA", { timeZone: TZ });
+  if (period === "day") return { from: ukMidnight(today).toISOString(), to: ukMidnight(addDay(today, 1)).toISOString() };
+  const wd = (new Date(today + "T12:00:00Z").getUTCDay() + 6) % 7; // Monday = 0
+  const monday = addDay(today, -wd);
+  return { from: ukMidnight(monday).toISOString(), to: ukMidnight(addDay(monday, 7)).toISOString() };
+}
+
+/** "Today", "This week", "November 2026" or "All time". */
+export function periodLabel(period: Period, month = currentMonth()): string {
+  return period === "day" ? "Today" : period === "week" ? "This week" : period === "all" ? "All time" : monthLabel(month);
 }
 
 export function monthBounds(m: string): { from: string; to: string } {

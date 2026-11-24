@@ -4,15 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { api, monthName, shiftMonth, shrinkImage, signOut } from "@/lib/portal/format";
 import type { Countdown, LeaderRow, Me, Metric, Offer, OfferFields, Outcome } from "@/lib/portal/types";
 import OfferForm, { toValues, type FormValues } from "./OfferForm";
-import { Brand, CountdownCard, Leaderboard, OfferCard } from "./Shared";
+import { Brand, CountdownCard, Leaderboard, OfferCard, PeriodPills, periodName, type LbPeriod, type OfferPeriod } from "./Shared";
 
 interface MeData {
   me: Me;
   month: string;
   countdowns: Record<Metric, Countdown>;
+  period: OfferPeriod;
   offers: Offer[];
   leaderboard: LeaderRow[];
-  lb: "month" | "last" | "all";
+  lb: LbPeriod;
 }
 
 type Tab = "upload" | "offers" | "leaderboard";
@@ -35,7 +36,8 @@ export default function Portal({ me }: { me: Me }) {
   const [tab, setTab] = useState<Tab>("upload");
   const [data, setData] = useState<MeData | null>(null);
   const [month, setMonth] = useState<string | null>(null);
-  const [lb, setLb] = useState<"month" | "last" | "all">("month");
+  const [period, setPeriod] = useState<OfferPeriod>("month");
+  const [lb, setLb] = useState<LbPeriod>("month");
   const [error, setError] = useState<string | null>(null);
   const [metric, setMetricState] = useState<Metric>("value");
   useEffect(() => {
@@ -53,14 +55,14 @@ export default function Portal({ me }: { me: Me }) {
 
   const load = useCallback(async () => {
     try {
-      const q = new URLSearchParams({ lb });
+      const q = new URLSearchParams({ lb, period });
       if (month) q.set("month", month);
       setData(await api<MeData>(`/api/portal/me?${q}`));
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't load.");
     }
-  }, [month, lb]);
+  }, [month, lb, period]);
 
   useEffect(() => {
     load();
@@ -88,6 +90,8 @@ export default function Portal({ me }: { me: Me }) {
             data={data}
             month={current ?? data.month}
             onMonth={(m) => setMonth(m)}
+            period={period}
+            onPeriod={setPeriod}
             reload={load}
           />
         )}
@@ -204,7 +208,9 @@ function Upload({ onSaved }: { onSaved: () => void }) {
   );
 }
 
-function MyOffers({ data, month, onMonth, reload }: { data: MeData; month: string; onMonth: (m: string) => void; reload: () => Promise<void> }) {
+function MyOffers({ data, month, onMonth, period, onPeriod, reload }: {
+  data: MeData; month: string; onMonth: (m: string) => void; period: OfferPeriod; onPeriod: (p: OfferPeriod) => void; reload: () => Promise<void>;
+}) {
   const [editing, setEditing] = useState<Offer | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [filter, setFilter] = useState<Outcome | "all">("all");
@@ -263,13 +269,16 @@ function MyOffers({ data, month, onMonth, reload }: { data: MeData; month: strin
       <div className="kb-cardhead">
         <div>
           <h3>My offers</h3>
-          <p className="kb-sub">{monthName(month)} · {data.offers.length} sent</p>
+          <p className="kb-sub">{periodName(period, month, monthName)} · {data.offers.length} sent</p>
         </div>
-        <div className="pt-month">
-          <button onClick={() => onMonth(shiftMonth(month, -1))} aria-label="Previous month">‹</button>
-          <button onClick={() => onMonth(shiftMonth(month, 1))} disabled={month >= now} aria-label="Next month">›</button>
-        </div>
+        {period === "month" && (
+          <div className="pt-month">
+            <button onClick={() => onMonth(shiftMonth(month, -1))} aria-label="Previous month">‹</button>
+            <button onClick={() => onMonth(shiftMonth(month, 1))} disabled={month >= now} aria-label="Next month">›</button>
+          </div>
+        )}
       </div>
+      <PeriodPills period={period} onPeriod={onPeriod} />
       <div className="kb-pills pt-filter">
         {([["all", `All ${data.offers.length}`], ["pending", `Pending ${count("pending")}`], ["won", `Won ${count("won")}`], ["lost", `Lost ${count("lost")}`]] as const).map(([k, l]) => (
           <button key={k} className={`kb-pill${filter === k ? " on" : ""}`} onClick={() => setFilter(k)}>{l}</button>

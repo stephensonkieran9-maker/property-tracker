@@ -1,5 +1,6 @@
 // ── Team targets ─────────────────────────────────────────────
-// Edit these to match each team's real monthly targets.
+// Targets are now set on the dashboard (supabase/board_targets.sql). These are only
+// used until that script has been run, or if the database can't be reached.
 // `monthly` is the default; add a month key to `overrides` to change one month.
 
 export type TargetMetric =
@@ -24,6 +25,9 @@ export const TEAM_TARGETS: TeamTarget[] = [
   { team: "Operations", label: "Month occupancy", metric: "occupancy", monthly: 80 },
   { team: "Guest experience", label: "Unanswered messages (max)", metric: "unanswered", monthly: 10 },
 ];
+
+/** Platform commission taken off every Hostaway booking for Keapr Revenue Combined (12%). */
+export const HOSTAWAY_PLATFORM_COMMISSION = 0.12;
 
 /** Occupancy % below which a night is flagged on the 14-night heatmap. */
 export const NIGHTLY_OCCUPANCY_TARGET = 60;

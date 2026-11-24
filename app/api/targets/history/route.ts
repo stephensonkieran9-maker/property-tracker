@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPersonHistory } from "@/lib/sheets";
+import { personHistory, targetsConfigured } from "@/lib/boardTargets";
 import { londonToday } from "@/lib/dates";
 
 export const runtime = "nodejs";
@@ -12,7 +13,13 @@ export async function GET(req: NextRequest) {
   const m = req.nextUrl.searchParams.get("month");
   const month = m && /^\d{4}-\d{2}$/.test(m) ? m : londonToday().slice(0, 7);
   try {
-    return NextResponse.json({ month, history: await getPersonHistory(month, 6) }, { headers: EDGE_CACHE });
+    let history;
+    try {
+      history = targetsConfigured() ? await personHistory(month, 6) : await getPersonHistory(month, 6);
+    } catch {
+      history = await getPersonHistory(month, 6); // dashboard targets not set up yet
+    }
+    return NextResponse.json({ month, history }, { headers: EDGE_CACHE });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : "Unknown error" }, { status: 500 });
   }

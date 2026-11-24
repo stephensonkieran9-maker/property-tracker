@@ -76,6 +76,10 @@ export interface Problem {
 }
 
 export interface TargetProgress {
+  /** Dashboard target id (when targets are managed on the dashboard). */
+  id?: string;
+  /** Where the actual comes from: a Hostaway metric, "combinedRevenue", "manual" or "offers_value"/"offers_worth". */
+  source?: string;
   team: string;
   label: string;
   actual: number;
@@ -147,6 +151,8 @@ export interface Board {
     onboardedUnits: Array<{ name: string; group: string; date: string }>;
     daysInMonth: number;
     revenueTarget: number;
+    /** Keapr Revenue Combined: Hostaway bookings less platform commission, plus arbitraged offers won. Company-wide. */
+    combined: Combined;
   };
 
   next14: {
@@ -163,11 +169,18 @@ export interface Board {
 
   targets: TargetProgress[];
 
-  /** Per-person targets from the Google Sheet (pulled daily). */
+  /** Whether targets can be added / removed / set on the dashboard, and why not if not. */
+  targetsAdmin: { editable: boolean; note?: string };
+
+  /** Per-person targets (set on the dashboard; the Google Sheet is only a fallback). */
   people: {
-    source: "sheet" | "default";
+    source: "dashboard" | "sheet" | "default";
     error?: string;
     rows: Array<{
+      id?: string;
+      /** "manual", "offers_value" or "offers_worth". */
+      source?: string;
+      userId?: string | null;
       person: string;
       team?: string;
       target: number;
@@ -177,4 +190,24 @@ export interface Board {
       status: "ahead" | "on-track" | "behind" | "pending";
     }>;
   };
+}
+
+export interface Combined {
+  /** Hostaway revenue booked in the month (booking totals). */
+  hostawayGross: number;
+  /** Platform commission taken off each Hostaway booking, as a %. */
+  platformPct: number;
+  hostawayNet: number;
+  /** Arbitraged offers won (not in Hostaway): worth to Keapr. */
+  arbitraged: number;
+  arbitragedCount: number;
+  /** Won arbitraged offers with no "worth to Keapr" yet (booking value less platform commission used instead). */
+  estimated: number;
+  total: number;
+  ytdHostawayNet: number;
+  ytdArbitraged: number;
+  ytdTotal: number;
+  /** False when the offers database can't be reached (total is Hostaway only). */
+  offersAvailable: boolean;
+  offersError?: string;
 }

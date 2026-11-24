@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireMember } from "@/lib/portal/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { OFFER_COLUMNS, toCsv } from "@/lib/portal/offers";
-import { currentMonth, isMonth, monthBounds } from "@/lib/portal/period";
+import { currentMonth, isMonth, isPeriod, periodBounds, type Period } from "@/lib/portal/period";
 import { peopleNames, sumTotals, totalsByUser } from "@/lib/portal/stats";
 import { EMPTY_TOTALS } from "@/lib/portal/types";
 
@@ -11,12 +11,13 @@ export const dynamic = "force-dynamic";
 const PAGE = 100;
 const UUID = /^[0-9a-f-]{36}$/i;
 
-// All offers for a month, filterable by person / model / outcome. ?format=csv downloads them.
+// All offers for a period (today / this week / a month / all time), filterable by person / model / outcome. ?format=csv downloads them.
 export async function GET(req: Request) {
   const auth = await requireMember("admin");
   if ("res" in auth) return auth.res;
   const q = new URL(req.url).searchParams;
   const month = isMonth(q.get("month")) ? q.get("month")! : currentMonth();
+  const period: Period = isPeriod(q.get("period")) ? (q.get("period") as Period) : "month";
   const user = UUID.test(q.get("user") ?? "") ? q.get("user")! : null;
   const model = ["managed", "arbitraged"].includes(q.get("model") ?? "") ? q.get("model")! : null;
   const outcome = ["pending", "won", "lost"].includes(q.get("outcome") ?? "") ? q.get("outcome")! : null;
@@ -24,9 +25,10 @@ export async function GET(req: Request) {
   const csv = q.get("format") === "csv";
 
   const db = createAdminClient();
-  const b = monthBounds(month);
+  const b = periodBounds(period, month);
   const query = (from: number, to: number) => {
-    let s = db.from("offers").select(OFFER_COLUMNS, { count: "exact" }).gte("sent_at", b.from).lt("sent_at", b.to);
+    let s = db.from("offers").select(OFFER_COLUMNS, { count: "exact" });
+    if (b) s = s.gte("sent_at", b.from).lt("sent_at", b.to);
     if (user) s = s.eq("user_id", user);
     if (model) s = s.eq("model", model);
     if (outcome) s = s.eq("outcome", outcome);
@@ -57,11 +59,11 @@ export async function GET(req: Request) {
         ["platform", "Platform"], ["company_contact", "Company contact"], ["model", "Model"], ["hostaway_listing_id", "Hostaway listing ID"], ["outcome", "Outcome"], ["notes", "Notes"],
       ]);
       return new NextResponse(body, {
-        headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="keapr-offers-${month}.csv"` },
+        headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="keapr-offers-${period === "month" ? month : period === "all" ? "all-time" : period === "week" ? "this-week" : "today"}.csv"` },
       });
     }
 
-    const [list, totals] = await Promise.all([query(page * PAGE, page * PAGE + PAGE - 1), totalsByUser(db, month)]);
+    const [list, totals] = await Promise.all([query(page * PAGE, page * PAGE + PAGE - 1), totalsByUser(db, b)]);
     if (list.error) throw new Error(list.error.message);
     const rows = list.data ?? [];
     const names = await peopleNames(db, [...totals.keys(), ...rows.map((r) => r.user_id)]);
@@ -71,6 +73,7 @@ export async function GET(req: Request) {
       .sort((a, b2) => a.name.localeCompare(b2.name));
     return NextResponse.json({
       month,
+      period,
       offers: rows.map((r) => ({ ...r, person: names.get(r.user_id)?.name ?? "Unknown" })),
       total: list.count ?? rows.length,
       pageSize: PAGE,

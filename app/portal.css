@@ -195,3 +195,7 @@
 .pt-worth input { width: 100%; background: var(--k-panel); border: 1px solid var(--k-line); color: var(--k-text); border-radius: 10px; padding: 10px 11px; font: inherit; font-size: 16px; color-scheme: dark; }
 .pt-worth input:focus { outline: none; border-color: var(--k-gold); }
 .pt-worth small { font-size: 11px; color: var(--k-muted); }
+
+/* Day / Week / Month / All switch on offer lists */
+.pt-period { flex-wrap: nowrap; }
+.pt-card .pt-period, .kb-card > .pt-period { margin: 0 0 10px; }

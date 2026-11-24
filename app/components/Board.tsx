@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSvgWidth } from "@/lib/useSvgWidth";
 import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
+import TargetsEditor from "./TargetsEditor";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
 // ── Formatting ──────────────────────────────────────────────
@@ -72,16 +73,17 @@ export default function Board() {
   const [month, setMonth] = useState<string | null>(null);
   const [group, setGroup] = useState("All");
 
-  const load = useCallback(async (m: string | null, g: string) => {
+  const load = useCallback(async (m: string | null, g: string, fresh = false) => {
     setBusy(true);
     try {
       const q = new URLSearchParams();
       if (m) q.set("month", m);
       if (g !== "All") q.set("group", g);
       const url = `/api/board?${q}`;
-      const cached = readCache<BoardData>(url);
+      const cached = fresh ? null : readCache<BoardData>(url);
       if (cached) setData(cached);
-      const res = await fetch(url, { cache: "no-store" });
+      // After an edit, skip the 30-second edge cache so the change shows straight away.
+      const res = await fetch(fresh ? `${url}${q.toString() ? "&" : ""}fresh=${Date.now()}` : url, { cache: "no-store" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
@@ -117,8 +119,9 @@ export default function Board() {
             <Top data={data} />
             <div className="kb-grid kb-two">
               <NeedsYou data={data} />
-              <Targets data={data} />
+              <Targets data={data} reload={() => load(month, group, true)} />
             </div>
+            <Combined data={data} />
             <Month data={data} setMonth={setMonth} />
             <div className="kb-grid kb-two">
               <Heatmap data={data} />
@@ -283,26 +286,87 @@ function TargetRow({ team, label, actual, target, format, pace: p, status }: {
   );
 }
 
-function Targets({ data }: { data: BoardData }) {
+const SOURCE_NOTE: Record<string, string> = {
+  offers_value: "offers · booking value",
+  offers_worth: "offers · worth to Keapr",
+  manual: "manual",
+  combinedRevenue: "combined",
+};
+
+function Targets({ data, reload }: { data: BoardData; reload: () => void }) {
   const { people } = data;
+  const [editing, setEditing] = useState(false);
+  const editable = data.targetsAdmin?.editable;
+  const peopleNote =
+    people.source === "dashboard"
+      ? "linked to offers or set by hand"
+      : people.source === "sheet"
+        ? "from Google Sheet · updated daily"
+        : people.error
+          ? `Sheet not loading: ${people.error}`
+          : "Google Sheet not connected yet";
   return (
     <section className="kb-card">
       <div className="kb-cardhead">
         <h3>Team targets</h3>
-        <a className="kb-link" href={`/targets${data.month.isCurrent ? "" : `?month=${data.month.key}`}`}>All targets →</a>
+        <div className="kt-headlinks">
+          {editable && !editing && <button className="kb-link kt-editbtn" onClick={() => setEditing(true)}>Edit</button>}
+          <a className="kb-link" href={`/targets${data.month.isCurrent ? "" : `?month=${data.month.key}`}`}>All targets →</a>
+        </div>
       </div>
       <p className="kb-sub">{data.month.label}{data.month.isCurrent ? " · marker = where we should be today" : ""}</p>
-      <div className="kb-target-group">
-        People
-        <span>{people.source === "sheet" ? "from Google Sheet · updated daily" : people.error ? `Sheet not loading: ${people.error}` : "Google Sheet not connected yet"}</span>
+      {!editable && data.targetsAdmin?.note && <p className="kb-sub kt-note">To add, remove or set targets here: {data.targetsAdmin.note}</p>}
+      {editing ? (
+        <TargetsEditor month={data.month.key} monthLabel={data.month.label} onChanged={reload} onClose={() => setEditing(false)} />
+      ) : (
+        <>
+          <div className="kb-target-group">People<span>{peopleNote}</span></div>
+          {people.rows.length === 0 && <div className="kb-empty">No people targets yet.{editable ? " Press Edit to add one." : ""}</div>}
+          {people.rows.map((r) => (
+            <TargetRow key={r.id ?? r.person} team={r.team ?? (r.source ? SOURCE_NOTE[r.source] : undefined)} label={r.person} actual={r.actual} target={r.target} format={r.format} pace={r.pace} status={r.status} />
+          ))}
+          <div className="kb-target-group">Company<span>live from Hostaway</span></div>
+          {data.targets.length === 0 && <div className="kb-empty">No company targets yet.</div>}
+          {data.targets.map((t) => (
+            <TargetRow key={t.id ?? t.label} team={t.team} label={t.label} actual={t.actual} target={t.target} format={t.format} pace={t.pace} status={t.status} />
+          ))}
+        </>
+      )}
+    </section>
+  );
+}
+
+function Combined({ data }: { data: BoardData }) {
+  const c = data.month.combined;
+  if (!c) return null;
+  const year = data.month.key.slice(0, 4);
+  return (
+    <section className="kb-card kc-card">
+      <div className="kc-main">
+        <span className="kb-kpi-l">Keapr Revenue Combined · {data.month.label}</span>
+        <span className="kc-total">{gbp(c.total)}</span>
+        <span className="kb-kpi-s">
+          {year} to date: <b className="kc-ytd">{gbp(c.ytdTotal)}</b>
+          {data.group !== "All" ? " · whole portfolio, not just this area" : ""}
+        </span>
       </div>
-      {people.rows.map((r) => (
-        <TargetRow key={r.person} team={r.team} label={r.person} actual={r.actual} target={r.target} format={r.format} pace={r.pace} status={r.status} />
-      ))}
-      <div className="kb-target-group">Company<span>live from Hostaway</span></div>
-      {data.targets.map((t) => (
-        <TargetRow key={t.label} team={t.team} label={t.label} actual={t.actual} target={t.target} format={t.format} pace={t.pace} status={t.status} />
-      ))}
+      <div className="kc-parts">
+        <div className="kc-part">
+          <span className="kb-kpi-l">Hostaway bookings</span>
+          <span className="kc-v">{gbp(c.hostawayNet)}</span>
+          <span className="kb-kpi-s">{gbp(c.hostawayGross)} booked − {c.platformPct}% platform commission</span>
+        </div>
+        <span className="kc-plus">+</span>
+        <div className="kc-part">
+          <span className="kb-kpi-l">Arbitraged offers won</span>
+          <span className="kc-v">{c.offersAvailable ? gbp(c.arbitraged) : "—"}</span>
+          <span className="kb-kpi-s">
+            {c.offersAvailable
+              ? `${c.arbitragedCount} won · worth to Keapr${c.estimated ? ` (${c.estimated} without it yet: booking value less platform commission used)` : ""}`
+              : `Not included: ${c.offersError ?? "offers not available"}`}
+          </span>
+        </div>
+      </div>
     </section>
   );
 }

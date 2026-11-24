@@ -5,7 +5,7 @@ import { api, gbp, monthName, pct, shiftMonth, signOut } from "@/lib/portal/form
 import type { LeaderRow, Me, Metric, Offer, Outcome, Totals } from "@/lib/portal/types";
 import OfferForm, { toValues } from "./OfferForm";
 import { toPayload } from "./Portal";
-import { Leaderboard, OfferCard } from "./Shared";
+import { Leaderboard, OfferCard, PeriodPills, periodName, type LbPeriod, type OfferPeriod } from "./Shared";
 
 type Tab = "offers" | "staff" | "leaderboard";
 
@@ -47,7 +47,7 @@ interface OffersData {
 
 function Offers() {
   const now = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" }).slice(0, 7);
-  const [f, setF] = useState({ month: now, user: "", model: "", outcome: "" });
+  const [f, setF] = useState<{ month: string; period: OfferPeriod; user: string; model: string; outcome: string }>({ month: now, period: "month", user: "", model: "", outcome: "" });
   const [data, setData] = useState<OffersData | null>(null);
   const [extra, setExtra] = useState<Offer[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +55,7 @@ function Offers() {
   const [editing, setEditing] = useState<Offer | null>(null);
 
   const qs = useCallback((page = 0, csv = false) => {
-    const q = new URLSearchParams({ month: f.month, page: String(page) });
+    const q = new URLSearchParams({ month: f.month, period: f.period, page: String(page) });
     if (f.user) q.set("user", f.user);
     if (f.model) q.set("model", f.model);
     if (f.outcome) q.set("outcome", f.outcome);
@@ -135,11 +135,14 @@ function Offers() {
   return (
     <>
       <div className="pt-filters">
-        <div className="pt-month">
-          <button onClick={() => setF({ ...f, month: shiftMonth(f.month, -1) })} aria-label="Previous month">‹</button>
-          <b>{monthName(f.month)}</b>
-          <button onClick={() => setF({ ...f, month: shiftMonth(f.month, 1) })} disabled={f.month >= now} aria-label="Next month">›</button>
-        </div>
+        <PeriodPills period={f.period} onPeriod={(period) => setF({ ...f, period })} />
+        {f.period === "month" && (
+          <div className="pt-month">
+            <button onClick={() => setF({ ...f, month: shiftMonth(f.month, -1) })} aria-label="Previous month">‹</button>
+            <b>{monthName(f.month)}</b>
+            <button onClick={() => setF({ ...f, month: shiftMonth(f.month, 1) })} disabled={f.month >= now} aria-label="Next month">›</button>
+          </div>
+        )}
         <select value={f.user} onChange={sel("user")} aria-label="Person">
           <option value="">Everyone</option>
           {data?.people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -167,7 +170,7 @@ function Offers() {
           <div className="kb-kpi"><span className="kb-kpi-l">Win rate</span><span className="kb-kpi-v">{pct(s.won + s.lost ? s.won / (s.won + s.lost) : null)}</span><span className="kb-kpi-s">{s.won ? `1 in ${Math.round((s.sent / s.won) * 10) / 10} accepted` : "won ÷ decided"}</span></div>
           <div className="kb-kpi"><span className="kb-kpi-l">Booking value won</span><span className="kb-kpi-v">{gbp(s.wonValue)}</span><span className="kb-kpi-s">of {gbp(s.sentValue)} offered</span></div>
           <div className="kb-kpi"><span className="kb-kpi-l">Worth to Keapr won</span><span className="kb-kpi-v">{gbp(s.wonWorth)}</span><span className="kb-kpi-s">from won offers only</span></div>
-          <div className="kb-kpi"><span className="kb-kpi-l">Net won (after platform commission)</span><span className="kb-kpi-v">{gbp(s.wonValue - s.wonCommission)}</span><span className="kb-kpi-s">{f.user ? "this person" : "whole team"}, {monthName(f.month)}</span></div>
+          <div className="kb-kpi"><span className="kb-kpi-l">Net won (after platform commission)</span><span className="kb-kpi-v">{gbp(s.wonValue - s.wonCommission)}</span><span className="kb-kpi-s">{f.user ? "this person" : "whole team"} · {periodName(f.period, f.month, monthName)}</span></div>
         </div>
       )}
 
@@ -335,7 +338,7 @@ function Staff({ meId }: { meId: string }) {
 }
 
 function Board() {
-  const [period, setPeriod] = useState<"month" | "last" | "all">("month");
+  const [period, setPeriod] = useState<LbPeriod>("month");
   const [metric, setMetric] = useState<Metric>("value");
   const [rows, setRows] = useState<LeaderRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);

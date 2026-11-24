@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireMember } from "@/lib/portal/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { countdowns, leaderboard } from "@/lib/portal/stats";
-import { currentMonth, isMonth, monthBounds, shiftMonth } from "@/lib/portal/period";
+import { currentMonth, isMonth, isPeriod, monthBounds, periodBounds, shiftMonth, type Period } from "@/lib/portal/period";
 import { OFFER_COLUMNS } from "@/lib/portal/offers";
 
 export const dynamic = "force-dynamic";
@@ -15,20 +15,23 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const now = currentMonth();
   const month = isMonth(url.searchParams.get("month")) ? url.searchParams.get("month")! : now;
-  const lb = url.searchParams.get("lb");
-  const lbMonth = lb === "all" ? null : lb === "last" ? shiftMonth(now, -1) : now;
+  const period: Period = isPeriod(url.searchParams.get("period")) ? (url.searchParams.get("period") as Period) : "month";
+  const lbRaw = url.searchParams.get("lb");
+  const lb = lbRaw === "day" || lbRaw === "week" || lbRaw === "last" || lbRaw === "all" ? lbRaw : "month";
+  const lbBounds = lb === "all" ? null : lb === "last" ? monthBounds(shiftMonth(now, -1)) : periodBounds(lb, now);
 
   try {
     const db = createAdminClient();
-    const b = monthBounds(month);
+    const b = periodBounds(period, month);
+    let mine = db.from("offers").select(OFFER_COLUMNS).eq("user_id", me.id);
+    if (b) mine = mine.gte("sent_at", b.from).lt("sent_at", b.to);
     const [cd, board, offers] = await Promise.all([
       countdowns(db, me, now),
-      leaderboard(db, lbMonth),
-      db.from("offers").select(OFFER_COLUMNS).eq("user_id", me.id).gte("sent_at", b.from).lt("sent_at", b.to)
-        .order("sent_at", { ascending: false }).limit(1000),
+      leaderboard(db, lbBounds),
+      mine.order("sent_at", { ascending: false }).limit(1000),
     ]);
     if (offers.error) throw new Error(offers.error.message);
-    return NextResponse.json({ me, month, countdowns: cd, offers: offers.data, leaderboard: board, lb: lb === "all" || lb === "last" ? lb : "month" });
+    return NextResponse.json({ me, month, countdowns: cd, period, offers: offers.data, leaderboard: board, lb });
   } catch (e) {
     console.error("[portal/me]", e);
     return NextResponse.json({ error: "Couldn't load your offers. Has the database script been run?" }, { status: 500 });

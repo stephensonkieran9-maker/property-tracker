@@ -1,6 +1,7 @@
-import type { Board, Conversation, Problem, ProblemKind, RawData, Reservation, TargetProgress, Unit } from "./boardTypes";
+import type { Board, Combined, Conversation, Problem, ProblemKind, RawData, Reservation, TargetProgress, Unit } from "./boardTypes";
 import { addDays, daysInMonth, londonStamp, londonToday, minutesBetween, monthEnd, monthLabel, monthStart, prevMonth, weekdayShort } from "./dates";
-import { NIGHTLY_OCCUPANCY_TARGET, TEAM_TARGETS, targetFor } from "./targets";
+import { HOSTAWAY_PLATFORM_COMMISSION, NIGHTLY_OCCUPANCY_TARGET, TEAM_TARGETS, targetFor } from "./targets";
+import { actualFor, arbitragedWon, loadTargets, offerActuals, targetsConfigured, type TargetRow, type TargetSource } from "./boardTargets";
 import { isDemo } from "./hostaway";
 import { getSnapshot } from "./snapshot";
 import { mockRawData } from "./mockBoard";
@@ -232,54 +233,162 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
   const occupancyPct = pct(nightsSold, availableNights);
   const progress = isCurrent ? Number(today.slice(8, 10)) / nDays : 1;
 
-  const actuals: Record<string, number> = {
+  // Team targets and Keapr Revenue Combined are company-wide, so an area filter doesn't change them.
+  const company = group === "All" ? null : await getBoard({ month });
+
+  // ── Keapr Revenue Combined: Hostaway less 12% platform commission + arbitraged offers won
+  let combined: Combined;
+  if (company) combined = company.month.combined;
+  else {
+    const keep = 1 - HOSTAWAY_PLATFORM_COMMISSION;
+    const hostawayNet = Math.round(monthRevenue * keep);
+    const ytdHostawayNet = Math.round(runningTotal * keep);
+    let arb = { month: 0, monthCount: 0, ytd: 0, estimated: 0 };
+    let offersAvailable = false;
+    let offersError: string | undefined;
+    if (targetsConfigured() && !isDemo()) {
+      try {
+        arb = await arbitragedWon(month);
+        offersAvailable = true;
+      } catch (e) {
+        offersError = e instanceof Error ? e.message : "Offers not available";
+      }
+    } else offersError = isDemo() ? "Demo data" : "Offers database not connected";
+    combined = {
+      hostawayGross: Math.round(monthRevenue),
+      platformPct: Math.round(HOSTAWAY_PLATFORM_COMMISSION * 100),
+      hostawayNet,
+      arbitraged: arb.month,
+      arbitragedCount: arb.monthCount,
+      estimated: arb.estimated,
+      total: hostawayNet + arb.month,
+      ytdHostawayNet,
+      ytdArbitraged: arb.ytd,
+      ytdTotal: ytdHostawayNet + arb.ytd,
+      offersAvailable,
+      offersError,
+    };
+  }
+
+  const hostawayActuals: Partial<Record<TargetSource, number>> = {
     unitsOnboarded: onboardedThisMonth,
     bookedRevenue: Math.round(monthRevenue),
     bookings: monthBookings.length,
     occupancy: occupancyPct,
     unanswered: waiting.length,
+    combinedRevenue: combined.total,
   };
-  const targets: TargetProgress[] = TEAM_TARGETS.map((t) => {
-    const target = targetFor(t, month);
-    const actual = actuals[t.metric] ?? 0;
-    const cumulative = t.metric === "unitsOnboarded" || t.metric === "bookedRevenue" || t.metric === "bookings";
-    const lower = t.metric === "unanswered";
-    const expected = cumulative ? target * progress : target;
-    return {
-      team: t.team,
-      label: t.label,
-      actual,
-      target,
-      format: t.metric === "bookedRevenue" ? "gbp" : t.metric === "occupancy" ? "pct" : "int",
-      lowerIsBetter: lower,
-      pace: cumulative && isCurrent ? Math.round(expected) : null,
-      status:
-        t.metric === "occupancy"
-          ? actual >= target ? "on-track" : actual >= target - 5 ? "on-track" : "behind"
-          : pace(actual, target, expected, lower),
-    };
-  });
-  const revenueTarget = targetFor(TEAM_TARGETS.find((t) => t.metric === "bookedRevenue")!, month);
-  // Team targets are company-wide, so an area filter shouldn't change them.
-  const companyTargets = group === "All" ? targets : (await getBoard({ month })).targets;
+  const CUMULATIVE: TargetSource[] = ["unitsOnboarded", "bookedRevenue", "bookings", "combinedRevenue", "manual", "offers_value", "offers_worth"];
+  const statusFor = (source: TargetSource, unit: string, actual: number | null, target: number, lower: boolean): TargetProgress["status"] | "pending" => {
+    if (actual === null) return "pending";
+    if (source === "occupancy" || unit === "pct") return actual >= target - 5 ? "on-track" : "behind";
+    const cumulative = CUMULATIVE.includes(source);
+    return pace(actual, target, cumulative ? target * progress : target, lower);
+  };
+  const paceFor = (source: TargetSource, unit: string, target: number) =>
+    CUMULATIVE.includes(source) && unit !== "pct" && isCurrent ? Math.round(target * progress) : null;
 
-  const sheet = await getPersonTargets(month);
-  const people: Board["people"] = {
-    source: sheet.source,
-    error: sheet.error,
-    rows: sheet.people.map((p) => {
-      const expected = p.unit === "pct" ? p.target : p.target * progress;
+  // Targets set on the dashboard; fall back to the old fixed list + Google Sheet if that's not set up yet.
+  let dbTargets: TargetRow[] | null = null;
+  let targetsNote: string | undefined;
+  let offers = new Map<string, { value: number; worth: number }>();
+  if (company) {
+    // reuse the company board's targets below
+  } else if (!targetsConfigured()) {
+    targetsNote = "Connect Supabase to manage targets here.";
+  } else {
+    try {
+      dbTargets = await loadTargets();
+      if (dbTargets.some((r) => r.userId)) offers = await offerActuals(month);
+    } catch (e) {
+      targetsNote = e instanceof Error ? e.message : "Couldn't load targets.";
+      dbTargets = null;
+    }
+  }
+
+  let companyTargets: TargetProgress[];
+  let people: Board["people"];
+  let targetsAdmin: Board["targetsAdmin"];
+  if (company) {
+    companyTargets = company.targets;
+    people = company.people;
+    targetsAdmin = company.targetsAdmin;
+  } else if (dbTargets) {
+    targetsAdmin = { editable: true };
+    companyTargets = dbTargets
+      .filter((r) => r.kind === "company")
+      .map((r) => {
+        const actual = actualFor(r, month, hostawayActuals, offers);
+        const st = statusFor(r.source, r.unit, actual, r.target, r.lowerIsBetter);
+        return {
+          id: r.id,
+          source: r.source,
+          team: r.team ?? "",
+          label: r.label,
+          actual: actual ?? 0,
+          target: r.target,
+          format: r.unit,
+          lowerIsBetter: r.lowerIsBetter,
+          pace: r.lowerIsBetter ? null : paceFor(r.source, r.unit, r.target),
+          status: st === "pending" ? "behind" : st,
+        };
+      });
+    people = {
+      source: "dashboard",
+      rows: dbTargets
+        .filter((r) => r.kind === "person")
+        .map((r) => {
+          const actual = actualFor(r, month, hostawayActuals, offers);
+          return {
+            id: r.id,
+            source: r.source,
+            userId: r.userId,
+            person: r.label,
+            team: r.team ?? undefined,
+            target: r.target,
+            actual,
+            format: r.unit,
+            pace: r.lowerIsBetter ? null : paceFor(r.source, r.unit, r.target),
+            status: statusFor(r.source, r.unit, actual, r.target, r.lowerIsBetter),
+          };
+        }),
+    };
+  } else {
+    targetsAdmin = { editable: false, note: targetsNote };
+    companyTargets = TEAM_TARGETS.map((t) => {
+      const target = targetFor(t, month);
+      const actual = hostawayActuals[t.metric] ?? 0;
+      const lower = t.metric === "unanswered";
+      const st = statusFor(t.metric, t.metric === "occupancy" ? "pct" : "int", actual, target, lower);
       return {
+        source: t.metric,
+        team: t.team,
+        label: t.label,
+        actual,
+        target,
+        format: t.metric === "bookedRevenue" ? "gbp" : t.metric === "occupancy" ? "pct" : "int",
+        lowerIsBetter: lower,
+        pace: lower ? null : paceFor(t.metric, t.metric === "occupancy" ? "pct" : "int", target),
+        status: st === "pending" ? "behind" : st,
+      };
+    });
+    const sheet = await getPersonTargets(month);
+    people = {
+      source: sheet.source,
+      error: sheet.error,
+      rows: sheet.people.map((p) => ({
         person: p.person,
         team: p.team,
         target: p.target,
         actual: p.actual,
         format: p.unit,
-        pace: isCurrent && p.unit !== "pct" ? Math.round(expected) : null,
-        status: p.actual === null ? "pending" : pace(p.actual, p.target, expected),
-      };
-    }),
-  };
+        pace: isCurrent && p.unit !== "pct" ? Math.round(p.target * progress) : null,
+        status: p.actual === null ? "pending" : pace(p.actual, p.target, p.unit === "pct" ? p.target : p.target * progress),
+      })),
+    };
+  }
+  const revTarget = companyTargets.find((t) => t.source === "bookedRevenue");
+  const revenueTarget = revTarget ? revTarget.target : 0;
 
   return {
     demo: isDemo(),
@@ -327,10 +436,12 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
       onboardedUnits,
       daysInMonth: nDays,
       revenueTarget: group === "All" ? revenueTarget : 0,
+      combined,
     },
     next14: { dates, rows, target: NIGHTLY_OCCUPANCY_TARGET },
     portfolio: { units: units.length, onboardedThisMonth, lostThisMonth },
     targets: companyTargets,
+    targetsAdmin,
     people,
   };
 }

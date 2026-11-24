@@ -106,7 +106,9 @@ function Content({ data, hist, busy, go }: { data: Board; hist: History; busy: b
       <div className="kt-section">
         <h2>People</h2>
         <span>
-          {data.people.source === "sheet"
+          {data.people.source === "dashboard"
+            ? "Set on the dashboard (Edit on the Team targets card) · offers team linked to their offers"
+            : data.people.source === "sheet"
             ? "From the Google Sheet · refreshed daily"
             : data.people.error
               ? `Google Sheet not loading (${data.people.error}) · showing default targets`
@@ -121,7 +123,7 @@ function Content({ data, hist, busy, go }: { data: Board; hist: History; busy: b
 
       <div className="kt-section">
         <h2>Company</h2>
-        <span>Live from Hostaway · whole portfolio</span>
+        <span>Live from Hostaway · whole portfolio{data.month.combined ? ` · Keapr Revenue Combined ${"£" + data.month.combined.total.toLocaleString("en-GB")}` : ""}</span>
       </div>
       <div className="kt-company">
         {data.targets.map((t) => (
@@ -148,7 +150,7 @@ function PersonCard({ p, history, isCurrent, daysLeft }: {
   const pctDone = p.actual === null ? null : Math.round((p.actual / Math.max(1, p.target)) * 100);
   const remaining = p.actual === null ? null : Math.max(0, p.target - p.actual);
   let line: string;
-  if (p.actual === null) line = "Waiting for this month's actual in the sheet.";
+  if (p.actual === null) line = p.source === "manual" ? "No actual typed in for this month yet. Add it with Edit on the dashboard." : "Waiting for this month's actual.";
   else if (remaining === 0) line = `Target hit: ${fmtFull(p.actual - p.target, p.format)} over.`;
   else if (!isCurrent) line = `Finished at ${pctDone}% of target.`;
   else if (daysLeft > 0) line = `${fmtFull(remaining!, p.format)} to go · ${fmtFull(Math.ceil(remaining! / daysLeft), p.format)} a day for ${daysLeft} days.`;

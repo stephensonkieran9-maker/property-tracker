@@ -536,3 +536,48 @@ body { margin: 0; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust:
 .kb-nav { transition: color 0.15s, background 0.15s; }
 .kb-nav:active { transform: scale(0.94); }
 .kb-loading { padding: 120px 0; opacity: 0; animation: kbIn 0.2s ease-out 0.4s forwards; }
+
+/* ── Keapr Revenue Combined ── */
+.kc-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); gap: 16px; align-items: center; margin-bottom: 14px; border-color: rgba(242, 193, 78, 0.28); background: linear-gradient(135deg, rgba(242, 193, 78, 0.07), var(--k-card) 55%); }
+.kc-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.kc-total { font-family: var(--k-serif); font-size: 44px; line-height: 1; color: var(--k-gold); letter-spacing: -0.01em; }
+.kc-ytd { color: var(--k-text); font-weight: 600; }
+.kc-parts { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
+.kc-part { background: var(--k-card); border: 1px solid var(--k-line-soft); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.kc-v { font-size: 22px; font-weight: 600; }
+.kc-plus { color: var(--k-faint); font-size: 20px; }
+@media (max-width: 760px) {
+  .kc-card { grid-template-columns: 1fr; }
+  .kc-total { font-size: 38px; }
+  .kc-parts { grid-template-columns: 1fr; }
+  .kc-plus { display: none; }
+}
+
+/* ── Targets editor ── */
+.kt-headlinks { display: flex; gap: 12px; align-items: center; }
+.kt-editbtn { background: none; border: 0; cursor: pointer; padding: 0; font: inherit; }
+.kt-note { color: var(--k-faint); }
+.kt-edit-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.kt-edit-head span { color: var(--k-muted); font-size: 11.5px; }
+.kt-edit-x { margin-left: auto; background: none; border: 0; cursor: pointer; font: inherit; }
+.kt-ok { background: var(--k-green-soft); color: var(--k-green); border-radius: 10px; padding: 8px 10px; font-size: 12px; margin-bottom: 8px; }
+.kt-err { background: var(--k-red-soft); color: var(--k-red); border-radius: 10px; padding: 8px 10px; font-size: 12px; margin-bottom: 8px; }
+.kt-erow { border: 1px solid var(--k-line-soft); background: var(--k-card-2); border-radius: 12px; padding: 10px 12px; margin: 8px 0; }
+.kt-erow.new { border-color: rgba(242, 193, 78, 0.35); }
+.kt-efields { display: flex; flex-wrap: wrap; gap: 8px; }
+.kt-f { display: flex; flex-direction: column; gap: 3px; flex: 1 1 110px; min-width: 0; }
+.kt-f.grow { flex: 2 1 160px; }
+.kt-f span { font-size: 10.5px; color: var(--k-muted); }
+.kt-f input, .kt-f select { background: var(--k-panel); border: 1px solid var(--k-line); color: var(--k-text); border-radius: 8px; padding: 8px 9px; font: inherit; font-size: 13px; width: 100%; min-width: 0; }
+.kt-f input:focus, .kt-f select:focus { outline: none; border-color: var(--k-gold); }
+.kt-f.kt-check { flex-direction: row; align-items: center; gap: 6px; flex: 1 1 100%; }
+.kt-f.kt-check input { width: auto; }
+.kt-ehint { font-size: 11px; color: var(--k-faint); margin: 6px 0 0; }
+.kt-ebtns { display: flex; gap: 12px; align-items: center; margin-top: 8px; }
+.kt-ebtns .kb-link { background: none; border: 0; cursor: pointer; font: inherit; font-size: 12px; }
+.kt-btn { background: var(--k-gold); color: #1a1406; border: 0; border-radius: 8px; padding: 7px 14px; font-weight: 600; font-size: 12.5px; cursor: pointer; }
+.kt-btn:disabled { opacity: 0.6; cursor: default; }
+.kt-danger { color: var(--k-red) !important; }
+.kt-add { display: block; width: 100%; margin: 6px 0 4px; background: none; border: 1px dashed var(--k-line); color: var(--k-muted); border-radius: 10px; padding: 9px; font-size: 12.5px; cursor: pointer; }
+.kt-add:hover { color: var(--k-text); border-color: var(--k-faint); }
+@media (max-width: 700px) { .kt-f, .kt-f.grow { flex: 1 1 100%; } .kt-f input, .kt-f select { font-size: 16px; } }
