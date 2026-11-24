@@ -43,7 +43,7 @@ export function warmOtherPages(): void {
   const run = async () => {
     for (const url of PAGE_URLS) {
       try {
-        const res = await fetch(url);
+        const res = await fetch(url, { cache: "no-store" });
         if (res.ok) writeCache(url, await res.json());
       } catch {
         /* best-effort */

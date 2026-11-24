@@ -317,7 +317,7 @@ function Targets({ data, reload }: { data: BoardData; reload: () => void }) {
       <p className="kb-sub">{data.month.label}{data.month.isCurrent ? " · marker = where we should be today" : ""}</p>
       {!editable && data.targetsAdmin?.note && <p className="kb-sub kt-note">To add, remove or set targets here: {data.targetsAdmin.note}</p>}
       {editing ? (
-        <TargetsEditor month={data.month.key} monthLabel={data.month.label} onChanged={reload} onClose={() => setEditing(false)} />
+        <TargetsEditor month={data.month.key} monthLabel={data.month.label} onChanged={reload} onClose={() => { setEditing(false); reload(); }} />
       ) : (
         <>
           <div className="kb-target-group">People<span>{peopleNote}</span></div>

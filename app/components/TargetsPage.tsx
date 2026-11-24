@@ -111,7 +111,7 @@ function Content({ data, hist, busy, go, reload }: { data: Board; hist: History;
 
       {editing && (
         <section className="kb-card" style={{ marginBottom: 18 }}>
-          <TargetsEditor month={m.key} monthLabel={m.label} onChanged={reload} onClose={() => setEditing(false)} />
+          <TargetsEditor month={m.key} monthLabel={m.label} onChanged={reload} onClose={() => { setEditing(false); reload(); }} />
         </section>
       )}
       {!editable && data.targetsAdmin?.note && <p className="kb-sub">To edit targets: {data.targetsAdmin.note}</p>}
