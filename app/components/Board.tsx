@@ -354,18 +354,15 @@ function Combined({ data }: { data: BoardData }) {
         <div className="kc-part">
           <span className="kb-kpi-l">Hostaway bookings</span>
           <span className="kc-v">{gbp(c.hostawayNet)}</span>
-          <span className="kb-kpi-s">
-            {gbp(c.hostawayGross)} booked · {c.platformPct}% platform commission off everything
-            {c.managedOffersCount ? ` except ${gbp(c.managedOffers)} from ${c.managedOffersCount} managed offer${c.managedOffersCount === 1 ? "" : "s"} (no commission)` : ""}
-          </span>
+          <span className="kb-kpi-s">{gbp(c.hostawayGross)} booked − {c.platformPct}% platform commission{c.offersAvailable ? " · offer bookings counted on the right" : ""}</span>
         </div>
         <span className="kc-plus">+</span>
         <div className="kc-part">
-          <span className="kb-kpi-l">Arbitraged offers won</span>
-          <span className="kc-v">{c.offersAvailable ? gbp(c.arbitraged) : "—"}</span>
+          <span className="kb-kpi-l">Offers won</span>
+          <span className="kc-v">{c.offersAvailable ? gbp(c.offersWon) : "—"}</span>
           <span className="kb-kpi-s">
             {c.offersAvailable
-              ? `${c.arbitragedCount} won · worth to Keapr${c.estimated ? ` (${c.estimated} without it yet: booking value less platform commission used)` : ""}`
+              ? `${gbp(c.managedOffers)} managed (${c.managedOffersCount}, no commission) + ${gbp(c.arbitraged)} arbitraged (${c.arbitragedCount})${c.estimated ? ` · ${c.estimated} arbitraged without worth to Keapr yet, estimated` : ""}`
               : `Not included: ${c.offersError ?? "offers not available"}`}
           </span>
         </div>

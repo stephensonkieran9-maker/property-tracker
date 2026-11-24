@@ -282,22 +282,29 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
     };
     const m = split(monthBookings);
     const y = split(confirmed.filter((r) => r.bookedOn.slice(0, 10) >= yearStart && r.bookedOn.slice(0, 10) <= ytdEnd));
-    const hostawayNet = Math.round(m.other * keep + m.offer);
-    const ytdHostawayNet = Math.round(y.other * keep + y.offer);
+    // Hostaway box: bookings that didn't come from offers, less 12%.
+    // Offers box: managed offer bookings (their Hostaway amount, in full) + arbitraged offers won.
+    const hostawayNet = Math.round(m.other * keep);
+    const ytdHostawayNet = Math.round(y.other * keep);
+    const offersWon = Math.round(m.offer) + arb.month;
+    const ytdOffersWon = Math.round(y.offer) + arb.ytd;
     combined = {
-      hostawayGross: Math.round(monthRevenue),
+      hostawayGross: Math.round(m.other),
       platformPct: Math.round(HOSTAWAY_PLATFORM_COMMISSION * 100),
       hostawayNet,
+      offersWon,
+      offersWonCount: m.n + arb.monthCount,
       managedOffers: Math.round(m.offer),
       managedOffersCount: m.n,
       managedUnmatched: unmatched,
       arbitraged: arb.month,
       arbitragedCount: arb.monthCount,
       estimated: arb.estimated,
-      total: hostawayNet + arb.month,
+      total: hostawayNet + offersWon,
       ytdHostawayNet,
+      ytdOffersWon,
       ytdArbitraged: arb.ytd,
-      ytdTotal: ytdHostawayNet + arb.ytd,
+      ytdTotal: ytdHostawayNet + ytdOffersWon,
       offersAvailable,
       offersError,
     };
