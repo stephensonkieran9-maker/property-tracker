@@ -4,8 +4,9 @@ import { personHistory, targetsConfigured } from "@/lib/boardTargets";
 import { londonToday } from "@/lib/dates";
 
 export const runtime = "nodejs";
-// Vercel's edge answers repeat requests for 30s, then serves the last answer while it fetches a new one.
-const EDGE_CACHE = { "Cache-Control": "s-maxage=30, stale-while-revalidate=600" };
+// Not cached at Vercel's edge: targets are edited on the board, and edits must show straight away.
+// (The Hostaway snapshot behind it is already held in memory, so this stays quick.)
+const EDGE_CACHE = { "Cache-Control": "private, no-store" };
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
