@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSvgWidth } from "@/lib/useSvgWidth";
 import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
-import CombinedRecent from "./CombinedRecent";
+import CombinedCard from "./CombinedCard";
 import TargetsEditor from "./TargetsEditor";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
@@ -342,34 +342,16 @@ function Combined({ data }: { data: BoardData }) {
   if (!c) return null;
   const year = data.month.key.slice(0, 4);
   return (
-    <section className="kb-card kc-card">
-      <div className="kc-main">
-        <span className="kb-kpi-l">Keapr Revenue Combined · {data.month.label}</span>
-        <span className="kc-total">{gbp(c.total)}</span>
-        <span className="kb-kpi-s">
-          {year} to date: <b className="kc-ytd">{gbp(c.ytdTotal)}</b>
-          {data.group !== "All" ? " · whole portfolio, not just this area" : ""}
-        </span>
-        <CombinedRecent r={c.recent} />
-      </div>
-      <div className="kc-parts">
-        <div className="kc-part">
-          <span className="kb-kpi-l">Hostaway bookings</span>
-          <span className="kc-v">{gbp(c.hostawayNet)}</span>
-          <span className="kb-kpi-s">{gbp(c.hostawayGross)} booked − {c.platformPct}% platform commission{c.offersAvailable ? " · offer bookings counted on the right" : ""}</span>
-        </div>
-        <span className="kc-plus">+</span>
-        <div className="kc-part">
-          <span className="kb-kpi-l">Offers won</span>
-          <span className="kc-v">{c.offersAvailable ? gbp(c.offersWon) : "—"}</span>
-          <span className="kb-kpi-s">
-            {c.offersAvailable
-              ? `${gbp(c.managedOffers)} managed (${c.managedOffersCount}, no commission) + ${gbp(c.arbitraged)} arbitraged (${c.arbitragedCount})${c.estimated ? ` · ${c.estimated} arbitraged without worth to Keapr yet, estimated` : ""}`
-              : `Not included: ${c.offersError ?? "offers not available"}`}
-          </span>
-        </div>
-      </div>
-    </section>
+    <CombinedCard
+      month={c}
+      monthLabel={data.month.label}
+      monthSub={<span className="kb-kpi-s">{year} to date: <b className="kc-ytd">{gbp(c.ytdTotal)}</b></span>}
+      note={data.group !== "All" ? "Whole portfolio, not just this area" : undefined}
+      platformPct={c.platformPct}
+      offersAvailable={c.offersAvailable}
+      offersError={c.offersError}
+      recent={c.recent}
+    />
   );
 }
 

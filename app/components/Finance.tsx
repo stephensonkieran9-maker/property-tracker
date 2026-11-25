@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSvgWidth } from "@/lib/useSvgWidth";
 import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
-import CombinedRecent from "./CombinedRecent";
+import CombinedCard from "./CombinedCard";
 import type { Finance as FinanceData, FinanceTotals } from "@/lib/finance";
 
 // Channel colours: fixed order, validated for colour-blind separation and contrast on the dark card.
@@ -168,34 +168,17 @@ function Combined({ data }: { data: FinanceData }) {
   if (!c) return null;
   const ch = change(c.total, c.previous.total);
   return (
-    <section className="kb-card kc-card" style={{ marginBottom: 14 }}>
-      <div className="kc-main">
-        <span className="kb-kpi-l">Keapr Revenue Combined · {data.label}</span>
-        <span className="kc-total">{gbp(c.total)}</span>
-        <span className="kb-kpi-s">
-          {ch && <span className={ch.up ? "kb-up" : "kb-down"}>{ch.txt}</span>} vs {c.previous.label} ({gbp(c.previous.total)})
-        </span>
-        <span className="kb-kpi-s">By booking date · whole portfolio{data.group !== "All" ? ", not just this area" : ""}</span>
-        <CombinedRecent r={c.recent} />
-      </div>
-      <div className="kc-parts">
-        <div className="kc-part">
-          <span className="kb-kpi-l">Hostaway bookings</span>
-          <span className="kc-v">{gbp(c.hostawayNet)}</span>
-          <span className="kb-kpi-s">{gbp(c.hostawayGross)} booked − {c.platformPct}% platform commission{c.offersAvailable ? " · offer bookings counted on the right" : ""}</span>
-        </div>
-        <span className="kc-plus">+</span>
-        <div className="kc-part">
-          <span className="kb-kpi-l">Offers won</span>
-          <span className="kc-v">{c.offersAvailable ? gbp(c.offersWon) : "—"}</span>
-          <span className="kb-kpi-s">
-            {c.offersAvailable
-              ? `${gbp(c.managedOffers)} managed (${c.managedOffersCount}, no commission) + ${gbp(c.arbitraged)} arbitraged (${c.arbitragedCount})${c.estimated ? ` · ${c.estimated} arbitraged without worth to Keapr yet, estimated` : ""}`
-              : `Not included: ${c.offersError ?? "offers not available"}`}
-          </span>
-        </div>
-      </div>
-    </section>
+    <CombinedCard
+      month={c}
+      monthLabel={data.label}
+      monthToggleLabel={/^\d{4}$/.test(data.label) ? "Year" : "Month"}
+      monthSub={<span className="kb-kpi-s">{ch && <span className={ch.up ? "kb-up" : "kb-down"}>{ch.txt}</span>} vs {c.previous.label} ({gbp(c.previous.total)})</span>}
+      note={`By booking date · whole portfolio${data.group !== "All" ? ", not just this area" : ""}`}
+      platformPct={c.platformPct}
+      offersAvailable={c.offersAvailable}
+      offersError={c.offersError}
+      recent={c.recent}
+    />
   );
 }
 

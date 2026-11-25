@@ -136,16 +136,23 @@ export interface CombinedRecent {
   weekStart: string;
   /** Last week, Monday to the same weekday. */
   lastWeekToDate: number;
+  /** Full breakdowns for the Day / Week toggle. */
+  dayPart: CombinedPart;
+  weekPart: CombinedPart;
 }
 
 /** Keapr Revenue Combined for today and this week (Mon–today), with yesterday and last week to the same day. */
 export function recentCombined(ctx: OfferContext, reservations: Reservation[], today: string): CombinedRecent {
   const ws = weekStart(today);
   const t = (a: string, b: string) => combinedFor(ctx, reservations, a, b).total;
+  const dayPart = combinedFor(ctx, reservations, today, today);
+  const weekPart = combinedFor(ctx, reservations, ws, today);
   return {
-    today: t(today, today),
+    dayPart,
+    weekPart,
+    today: dayPart.total,
     yesterday: t(addDays(today, -1), addDays(today, -1)),
-    week: t(ws, today),
+    week: weekPart.total,
     weekStart: ws,
     lastWeekToDate: t(addDays(ws, -7), addDays(today, -7)),
   };
