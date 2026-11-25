@@ -546,7 +546,15 @@ body { margin: 0; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust:
 .kc-part { background: var(--k-card); border: 1px solid var(--k-line-soft); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .kc-v { font-size: 22px; font-weight: 600; }
 .kc-plus { color: var(--k-faint); font-size: 20px; }
-.kc-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.kc-head { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+.kc-head > .kb-kpi-l { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kc-span { flex: none; margin-left: auto; }
+@media (max-width: 520px) {
+  /* Phones: toggle on its own row, still on the right, label underneath. */
+  .kc-head { flex-direction: column-reverse; align-items: stretch; }
+  .kc-head > .kb-kpi-l { white-space: normal; }
+  .kc-span { align-self: flex-end; }
+}
 .kc-span { display: inline-grid; grid-template-columns: repeat(3, auto); gap: 3px; background: var(--k-panel); border: 1px solid var(--k-line); border-radius: 10px; padding: 3px; }
 .kc-span button { border: 0; background: none; color: var(--k-muted); padding: 5px 12px; border-radius: 7px; font-size: 12px; cursor: pointer; }
 .kc-span button.on { background: var(--k-gold); color: #17130a; font-weight: 600; }
