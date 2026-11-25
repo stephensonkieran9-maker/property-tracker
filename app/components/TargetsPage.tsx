@@ -6,6 +6,7 @@ import { useSvgWidth } from "@/lib/useSvgWidth";
 import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import type { Board, TargetProgress } from "@/lib/boardTypes";
 import TargetsEditor from "./TargetsEditor";
+import CombinedRecent from "./CombinedRecent";
 
 type History = Record<string, Array<{ month: string; target: number; actual: number | null }>>;
 type Fmt = TargetProgress["format"];
@@ -136,7 +137,7 @@ function Content({ data, hist, busy, go, reload }: { data: Board; hist: History;
 
       <div className="kt-section">
         <h2>Company</h2>
-        <span>Live from Hostaway · whole portfolio{data.month.combined ? ` · Keapr Revenue Combined ${"£" + data.month.combined.total.toLocaleString("en-GB")}` : ""}</span>
+        <span>Live from Hostaway · whole portfolio{data.month.combined ? <> · Keapr Revenue Combined {"£" + data.month.combined.total.toLocaleString("en-GB")} this month · <CombinedRecent r={data.month.combined.recent} compact /></> : ""}</span>
       </div>
       <div className="kt-company">
         {data.targets.map((t) => (

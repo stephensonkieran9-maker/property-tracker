@@ -1,7 +1,7 @@
 import type { Board, Combined, Conversation, Problem, ProblemKind, RawData, Reservation, TargetProgress, Unit } from "./boardTypes";
 import { addDays, daysInMonth, londonStamp, londonToday, minutesBetween, monthEnd, monthLabel, monthStart, prevMonth, weekdayShort } from "./dates";
 import { HOSTAWAY_PLATFORM_COMMISSION, NIGHTLY_OCCUPANCY_TARGET, TEAM_TARGETS, targetFor } from "./targets";
-import { combinedFor, loadOfferContext } from "./combined";
+import { combinedFor, loadOfferContext, recentCombined, recentFrom } from "./combined";
 import { actualFor, loadTargets, offerActuals, targetsConfigured, type TargetRow, type TargetSource } from "./boardTargets";
 import { isDemo } from "./hostaway";
 import { getSnapshot } from "./snapshot";
@@ -241,7 +241,9 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
   let combined: Combined;
   if (company) combined = company.month.combined;
   else {
-    const ctx = await loadOfferContext(raw.reservations, yearStart);
+    const realToday = londonToday();
+    const from = recentFrom(realToday) < yearStart ? recentFrom(realToday) : yearStart;
+    const ctx = await loadOfferContext(raw.reservations, from);
     const m = combinedFor(ctx, raw.reservations, mStart, isCurrent ? today : mEnd);
     const y = combinedFor(ctx, raw.reservations, yearStart, ytdEnd);
     combined = {
@@ -254,6 +256,7 @@ export async function getBoard(opts: { month?: string; group?: string }): Promis
       ytdTotal: y.total,
       offersAvailable: ctx.available,
       offersError: ctx.error,
+      recent: recentCombined(ctx, raw.reservations, realToday),
     };
   }
 

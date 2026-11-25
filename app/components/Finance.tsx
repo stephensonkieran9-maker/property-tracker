@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSvgWidth } from "@/lib/useSvgWidth";
 import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
+import CombinedRecent from "./CombinedRecent";
 import type { Finance as FinanceData, FinanceTotals } from "@/lib/finance";
 
 // Channel colours: fixed order, validated for colour-blind separation and contrast on the dark card.
@@ -175,6 +176,7 @@ function Combined({ data }: { data: FinanceData }) {
           {ch && <span className={ch.up ? "kb-up" : "kb-down"}>{ch.txt}</span>} vs {c.previous.label} ({gbp(c.previous.total)})
         </span>
         <span className="kb-kpi-s">By booking date · whole portfolio{data.group !== "All" ? ", not just this area" : ""}</span>
+        <CombinedRecent r={c.recent} />
       </div>
       <div className="kc-parts">
         <div className="kc-part">

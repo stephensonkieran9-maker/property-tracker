@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSvgWidth } from "@/lib/useSvgWidth";
 import { cachedOnSwitch, readCache, warmOtherPages, writeCache } from "@/lib/clientCache";
 import AreaPicker from "./AreaPicker";
+import CombinedRecent from "./CombinedRecent";
 import TargetsEditor from "./TargetsEditor";
 import type { Board as BoardData, Problem, TargetProgress } from "@/lib/boardTypes";
 
@@ -349,6 +350,7 @@ function Combined({ data }: { data: BoardData }) {
           {year} to date: <b className="kc-ytd">{gbp(c.ytdTotal)}</b>
           {data.group !== "All" ? " · whole portfolio, not just this area" : ""}
         </span>
+        <CombinedRecent r={c.recent} />
       </div>
       <div className="kc-parts">
         <div className="kc-part">

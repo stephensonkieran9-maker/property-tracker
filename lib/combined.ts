@@ -115,3 +115,38 @@ export function combinedFor(ctx: OfferContext, reservations: Reservation[], star
     total: hostawayNet + offersWon,
   };
 }
+
+/** Monday of the week containing `day` (YYYY-MM-DD). */
+export function weekStart(day: string): string {
+  const wd = new Date(day + "T12:00:00Z").getUTCDay(); // 0 = Sunday
+  return addDays(day, -((wd + 6) % 7));
+}
+
+/** The earliest day `recentCombined` needs offers loaded from. */
+export function recentFrom(today: string): string {
+  return addDays(weekStart(today), -7);
+}
+
+export interface CombinedRecent {
+  today: number;
+  /** Yesterday, for comparison. */
+  yesterday: number;
+  /** Monday to today. */
+  week: number;
+  weekStart: string;
+  /** Last week, Monday to the same weekday. */
+  lastWeekToDate: number;
+}
+
+/** Keapr Revenue Combined for today and this week (Mon–today), with yesterday and last week to the same day. */
+export function recentCombined(ctx: OfferContext, reservations: Reservation[], today: string): CombinedRecent {
+  const ws = weekStart(today);
+  const t = (a: string, b: string) => combinedFor(ctx, reservations, a, b).total;
+  return {
+    today: t(today, today),
+    yesterday: t(addDays(today, -1), addDays(today, -1)),
+    week: t(ws, today),
+    weekStart: ws,
+    lastWeekToDate: t(addDays(ws, -7), addDays(today, -7)),
+  };
+}

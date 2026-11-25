@@ -6,7 +6,7 @@ import type { Reservation, Unit } from "./boardTypes";
 import { addDays, daysInMonth, londonStamp, londonToday, monthLabel } from "./dates";
 import { loadRaw } from "./board";
 import { isDemo } from "./hostaway";
-import { combinedFor, loadOfferContext, type CombinedPart } from "./combined";
+import { combinedFor, loadOfferContext, recentCombined, recentFrom, type CombinedPart, type CombinedRecent } from "./combined";
 import { HOSTAWAY_PLATFORM_COMMISSION } from "./targets";
 
 export type Basis = "stay" | "booking";
@@ -63,6 +63,8 @@ export interface Finance {
     offersAvailable: boolean;
     offersError?: string;
     previous: { label: string; total: number };
+    /** Today and this week (always the current ones). */
+    recent: CombinedRecent;
   };
   /** Stay revenue already on the books: rest of this month, then the next five months. */
   forward: Array<{ month: string; revenue: number; occupancyPct: number }>;
@@ -210,13 +212,14 @@ export async function getFinance(opts: { period?: string; key?: string; basis?: 
     cpEnd = cEnd < end ? `${py}${cEnd.slice(4)}` : `${py}-12-31`;
     cpLabel = cEnd < end ? `${py} to the same day` : py;
   }
-  const ctx = await loadOfferContext(raw.reservations, pStart);
+  const ctx = await loadOfferContext(raw.reservations, recentFrom(today) < pStart ? recentFrom(today) : pStart);
   const combined: Finance["combined"] = {
     ...combinedFor(ctx, raw.reservations, start, cEnd),
     platformPct: Math.round(HOSTAWAY_PLATFORM_COMMISSION * 100),
     offersAvailable: ctx.available,
     offersError: ctx.error,
     previous: { label: cpLabel, total: combinedFor(ctx, raw.reservations, pStart, cpEnd).total },
+    recent: recentCombined(ctx, raw.reservations, today),
   };
 
   // Monthly trend.

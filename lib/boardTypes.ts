@@ -220,4 +220,6 @@ export interface Combined {
   /** False when the offers database can't be reached (total is Hostaway only). */
   offersAvailable: boolean;
   offersError?: string;
+  /** Today and this week (always the current ones, whatever month is picked). */
+  recent?: import("./combined").CombinedRecent;
 }
