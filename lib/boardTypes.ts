@@ -151,7 +151,7 @@ export interface Board {
     onboardedUnits: Array<{ name: string; group: string; date: string }>;
     daysInMonth: number;
     revenueTarget: number;
-    /** Keapr Revenue Combined: Hostaway bookings less platform commission, plus arbitraged offers won. Company-wide. */
+    /** Keapr Revenue Combined: Keapr's 12% of Hostaway bookings, plus offers won. Company-wide. */
     combined: Combined;
   };
 
@@ -195,9 +195,9 @@ export interface Board {
 export interface Combined {
   /** Hostaway revenue booked in the month that didn't come from offers (booking totals). */
   hostawayGross: number;
-  /** Platform commission taken off each Hostaway booking, as a %. */
+  /** Keapr's share of each Hostaway booking, as a %. */
   platformPct: number;
-  /** Hostaway bookings that didn't come from offers, less commission. */
+  /** Keapr's share of Hostaway bookings that didn't come from offers. */
   hostawayNet: number;
   /** Offers won: managed (their Hostaway booking, no commission) + arbitraged (worth to Keapr). */
   offersWon: number;

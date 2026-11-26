@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ukMidnight } from "@/lib/portal/period";
 
 // Keapr Revenue Combined, shared by the board and the Finance page.
-//   Hostaway bookings that didn't come from an offer, less 12% platform commission
+//   Hostaway bookings that didn't come from an offer: Keapr's 12% share of the booking total
 // + Offers won: managed (their Hostaway booking, in full: no commission) and arbitraged (not in Hostaway).
 // Won managed offers are matched to their Hostaway reservation (property + check-in), so nothing is counted twice.
 // Hostaway bookings count by booking date; arbitraged offers by the date the offer was sent.
@@ -82,7 +82,7 @@ export async function loadOfferContext(reservations: Reservation[], fromDay: str
 
 /** Keapr Revenue Combined for bookings made between two days (inclusive, UK dates). `reservations` = whole portfolio. */
 export function combinedFor(ctx: OfferContext, reservations: Reservation[], start: string, end: string): CombinedPart {
-  const keep = 1 - HOSTAWAY_PLATFORM_COMMISSION;
+  const keep = HOSTAWAY_PLATFORM_COMMISSION; // Keapr's 12% is what the booking is worth to us
   let other = 0, offer = 0, n = 0;
   for (const r of reservations) {
     if (r.status !== "confirmed") continue;

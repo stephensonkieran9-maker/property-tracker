@@ -26,7 +26,7 @@ export const TEAM_TARGETS: TeamTarget[] = [
   { team: "Guest experience", label: "Unanswered messages (max)", metric: "unanswered", monthly: 10 },
 ];
 
-/** Platform commission taken off every Hostaway booking for Keapr Revenue Combined (12%). */
+/** Keapr's share of every Hostaway booking: what a booking is worth to Keapr in Keapr Revenue Combined (12%). */
 export const HOSTAWAY_PLATFORM_COMMISSION = 0.12;
 
 /** Occupancy % below which a night is flagged on the 14-night heatmap. */

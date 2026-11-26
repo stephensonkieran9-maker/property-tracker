@@ -78,7 +78,7 @@ export default function CombinedCard(p: CombinedCardProps) {
         <div className="kc-part">
           <span className="kb-kpi-l">Hostaway bookings</span>
           <span className="kc-v">{gbp(c.hostawayNet)}</span>
-          <span className="kb-kpi-s">{gbp(c.hostawayGross)} booked − {p.platformPct}% platform commission{p.offersAvailable ? " · offer bookings counted on the right" : ""}</span>
+          <span className="kb-kpi-s">{p.platformPct}% Keapr share of {gbp(c.hostawayGross)} booked{p.offersAvailable ? " · offer bookings counted on the right" : ""}</span>
         </div>
         <span className="kc-plus">+</span>
         <div className="kc-part">
